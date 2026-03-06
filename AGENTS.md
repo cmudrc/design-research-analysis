@@ -39,7 +39,7 @@ merging.
 ## Public Vs Private Boundaries
 
 - The supported public surface is whatever is re-exported from
-  `src/python_template/__init__.py`.
+  `src/design_research_analysis/__init__.py`.
 - Prefer adding new public behavior to stable top-level modules before creating
   deeper internal package trees.
 - If you add internal helper modules later, prefix them with `_` and keep them

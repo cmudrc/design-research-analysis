@@ -3,16 +3,16 @@ requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "python-template"
+name = "design-research-analysis"
 version = "0.1.0"
-description = "An opinionated starter template for typed Python libraries"
+description = "Utilities for design research analysis workflows"
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "The Design Research Collective" }]
 maintainers = [{ name = "Christopher C. McComb", email = "ccm@cmu.edu" }]
-keywords = ["python", "template", "library", "tooling", "design"]
+keywords = ["analysis", "design-research", "hmm", "markov", "sequence"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
@@ -23,7 +23,10 @@ classifiers = [
   "Topic :: Software Development :: Libraries :: Python Modules",
   "Typing :: Typed",
 ]
-dependencies = []
+dependencies = [
+  "matplotlib>=3.8,<4",
+  "numpy>=1.26,<3",
+]
 
 [project.optional-dependencies]
 dev = [
@@ -38,11 +41,17 @@ dev = [
   "twine>=5.1,<7",
   "uv>=0.6,<1",
 ]
+seq = [
+  "hmmlearn>=0.3.2,<1",
+  "networkx>=3.3,<4",
+  "scipy>=1.11,<2",
+]
+embeddings = ["sentence-transformers>=3.0,<4"]
 
 [project.urls]
-Homepage = "https://github.com/cmudrc/python-template"
-Repository = "https://github.com/cmudrc/python-template"
-Issues = "https://github.com/cmudrc/python-template/issues"
+Homepage = "https://github.com/cmudrc/design-research-analysis"
+Repository = "https://github.com/cmudrc/design-research-analysis"
+Issues = "https://github.com/cmudrc/design-research-analysis/issues"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
@@ -52,7 +61,7 @@ include-package-data = true
 where = ["src"]
 
 [tool.setuptools.package-data]
-python_template = ["py.typed"]
+design_research_analysis = ["py.typed"]
 
 [tool.pytest.ini_options]
 addopts = "-q"
@@ -79,7 +88,7 @@ convention = "google"
 "tests/*.py" = ["D"]
 
 [tool.mypy]
-packages = ["python_template"]
+packages = ["design_research_analysis"]
 python_version = "3.12"
 warn_unused_configs = true
 check_untyped_defs = true
@@ -89,3 +98,16 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 warn_return_any = true
 strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+  "hmmlearn",
+  "hmmlearn.*",
+  "matplotlib",
+  "matplotlib.*",
+  "networkx",
+  "networkx.*",
+  "sentence_transformers",
+  "sentence_transformers.*",
+]
+ignore_missing_imports = true

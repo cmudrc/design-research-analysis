@@ -1,4 +1,4 @@
-"""Core helpers that demonstrate the template package shape."""
+"""Core helpers for project metadata and summaries."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ _PACKAGE_TOKEN_RE = re.compile(r"[^a-z0-9]+")
 
 @dataclass(frozen=True, slots=True)
 class ProjectBlueprint:
-    """Describe the baseline choices captured by the template.
+    """Describe baseline project metadata.
 
     Args:
         name: The distribution name used for packaging.
@@ -67,7 +67,7 @@ def build_default_blueprint(
     project_name: str,
     package_name: str | None = None,
 ) -> ProjectBlueprint:
-    """Build a default project blueprint for the template repository.
+    """Build a default project blueprint for this repository.
 
     Args:
         project_name: The distribution or repository name.

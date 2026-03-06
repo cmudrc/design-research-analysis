@@ -1,7 +1,7 @@
 Quickstart
 ==========
 
-This template targets Python 3.12+ and assumes a standard `src/` layout.
+This package targets Python 3.12+ and uses a standard `src/` layout.
 
 Local development setup:
 

@@ -1,6 +1,6 @@
-# python-template
+# design-research-analysis
 
-`python-template` is a compact starter for typed Python
+`design-research-analysis` is a compact starter for typed Python
 libraries. It borrows the shared project shape from
 `design-research-agents` and `design-research-problems`, but keeps the initial
 surface area small enough to customize quickly.
@@ -67,7 +67,7 @@ make repro
 │   ├── check_docs_consistency.py
 │   └── check_google_docstrings.py
 ├── src
-│   └── python_template
+│   └── design_research_analysis
 │       ├── __init__.py
 │       ├── core.py
 │       └── py.typed
@@ -108,10 +108,10 @@ has a specific job:
   - `scripts/check_docs_consistency.py` verifies that the docs tree and package references stay in sync.
   - `scripts/check_google_docstrings.py` checks for required module, class, and function docstrings.
 - `src/` is the source root for the `src`-layout package.
-  - `src/python_template/` contains the installable Python package itself.
-    - `src/python_template/__init__.py` defines the curated public import surface.
-    - `src/python_template/core.py` contains the small example implementation shipped with the template.
-    - `src/python_template/py.typed` marks the package as PEP 561 typed for downstream tooling.
+  - `src/design_research_analysis/` contains the installable Python package itself.
+    - `src/design_research_analysis/__init__.py` defines the curated public import surface.
+    - `src/design_research_analysis/core.py` contains the small example implementation shipped with the template.
+    - `src/design_research_analysis/py.typed` marks the package as PEP 561 typed for downstream tooling.
 - `tests/` contains the pytest suite that protects the public behavior.
   - `tests/test_core.py` tests the package's example core behavior.
   - `tests/test_public_api.py` keeps the top-level exports explicit and stable.

@@ -1,7 +1,10 @@
 Dependencies And Extras
 =======================
 
-The base install intentionally has no required runtime dependencies.
+The base install keeps required runtime dependencies intentionally small:
+
+- `numpy`
+- `matplotlib`
 
 The `dev` extra installs the local contributor toolchain:
 
@@ -16,8 +19,19 @@ The `dev` extra installs the local contributor toolchain:
 - `twine`
 - `uv`
 
-Install it with:
+Optional feature extras:
+
+- `seq`:
+  - `hmmlearn`
+  - `networkx`
+  - `scipy`
+- `embeddings`:
+  - `sentence-transformers`
+
+Install extras with:
 
 .. code-block:: bash
 
    pip install -e ".[dev]"
+   pip install -e ".[seq]"
+   pip install -e ".[embeddings]"

@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from python_template import build_default_blueprint, describe_project
+from design_research_analysis import build_default_blueprint, describe_project
 
 
 def main() -> None:
     """Print the default project summary."""
-    blueprint = build_default_blueprint("python-template")
+    blueprint = build_default_blueprint("design-research-analysis")
     print(describe_project(blueprint))
 
 

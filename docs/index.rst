@@ -1,9 +1,9 @@
-python-template
+design-research-analysis
 ===================
 
-`python-template` is a reusable baseline for typed Python
-packages. It keeps the starting point small while still shipping the same core
-developer ergonomics used in the sibling design research repositories.
+`design-research-analysis` provides typed utilities for sequence-focused
+analysis tasks. It currently includes Markov-chain fitting, Hidden Markov Model
+helpers, embedding support hooks, and transition-visualization utilities.
 
 .. toctree::
    :maxdepth: 2
