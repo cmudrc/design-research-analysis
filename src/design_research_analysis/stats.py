@@ -2,19 +2,29 @@
 
 from __future__ import annotations
 
+import math
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
 from .table import coerce_unified_table
 
+if TYPE_CHECKING:
+    import pandas as pd
+
 _STATS_IMPORT_ERROR = (
     "This statistical method requires optional dependencies. "
     "Install with `pip install design-research-analysis[stats]`."
 )
+_POWER_IMPORT_ERROR = (
+    "Power analysis requires optional dependencies. "
+    "Install with `pip install design-research-analysis[stats]`."
+)
+_SUPPORTED_TESTS = {"one_sample_t", "paired_t", "two_sample_t"}
+_SUPPORTED_ALTERNATIVES = {"two-sided", "larger", "smaller"}
 
 
 @dataclass(slots=True)
@@ -130,6 +140,58 @@ def _eta_squared(groups: list[np.ndarray]) -> float:
     return float(ss_between / ss_total)
 
 
+def _as_array(values: Any, name: str) -> np.ndarray:
+    arr = np.asarray(values, dtype=float).reshape(-1)
+    if arr.size == 0:
+        raise ValueError(f"{name} must contain at least one value.")
+    return arr
+
+
+def _calc_stat(x: np.ndarray, y: np.ndarray | None, stat: str) -> float:
+    if stat == "mean":
+        return float(np.mean(x))
+    if stat == "median":
+        return float(np.median(x))
+    if y is None:
+        raise ValueError(f"stat '{stat}' requires y values.")
+    if stat == "diff_means":
+        return float(np.mean(x) - np.mean(y))
+    if stat == "diff_medians":
+        return float(np.median(x) - np.median(y))
+    raise ValueError("stat must be one of: mean, median, diff_means, diff_medians")
+
+
+def _render_ci_text(estimate: float, ci_low: float, ci_high: float, ci: float, stat: str) -> str:
+    return (
+        f"The bootstrap {stat} estimate is {estimate:.4g}. "
+        f"A {ci * 100:.1f}% interval spans [{ci_low:.4g}, {ci_high:.4g}], "
+        "which describes uncertainty under the resampling assumptions."
+    )
+
+
+def _render_permutation_text(p_value: float, stat_name: str, alternative: str) -> str:
+    return (
+        f"The permutation test for {stat_name} produced p={p_value:.4g} ({alternative}). "
+        "Interpret this as evidence against the null random-label model, not as proof of causality."
+    )
+
+
+def _render_np_test_text(
+    test_name: str,
+    p_value: float,
+    alpha: float,
+    effect_size: float | None,
+) -> str:
+    decision = "below" if p_value < alpha else "above"
+    effect_txt = ""
+    if effect_size is not None:
+        effect_txt = f" Effect size estimate is {effect_size:.4g}."
+    return (
+        f"{test_name} returned p={p_value:.4g}, which is {decision} alpha={alpha:.3g}."
+        f"{effect_txt} Use this with distribution checks and study context."
+    )
+
+
 def compare_groups(
     values: Sequence[float] | None = None,
     groups: Sequence[Any] | None = None,
@@ -139,16 +201,7 @@ def compare_groups(
     group_column: str = "group",
     method: str = "auto",
 ) -> GroupComparisonResult:
-    """Compare outcomes across groups using t-test or ANOVA.
-
-    Args:
-        values: Numeric values (row-aligned with ``groups``).
-        groups: Group labels.
-        data: Optional unified-table rows as an alternative to values/groups.
-        value_column: Value column when ``data`` is provided.
-        group_column: Group column when ``data`` is provided.
-        method: ``auto``, ``ttest``, ``anova``, or ``kruskal``.
-    """
+    """Compare outcomes across groups using t-test, ANOVA, or Kruskal-Wallis."""
     if data is not None:
         rows = coerce_unified_table(data)
         resolved_values: list[float] = []
@@ -292,16 +345,7 @@ def fit_mixed_effects(
     reml: bool = True,
     max_iter: int = 200,
 ) -> MixedEffectsResult:
-    """Fit a mixed-effects model using ``statsmodels``.
-
-    Args:
-        data: Unified-table rows.
-        formula: Patsy-style model formula (e.g., ``outcome ~ condition``).
-        group_column: Random-effect grouping column.
-        backend: Backend name. Currently only ``statsmodels`` is supported.
-        reml: Whether to use REML estimation.
-        max_iter: Maximum optimizer iterations.
-    """
+    """Fit a mixed-effects model using ``statsmodels``."""
     if backend != "statsmodels":
         raise ValueError("Unsupported backend. Valid options: statsmodels.")
 
@@ -351,11 +395,505 @@ def fit_mixed_effects(
     )
 
 
+def bootstrap_ci(
+    x: Any,
+    *,
+    stat: str = "mean",
+    y: Any | None = None,
+    n_resamples: int = 10000,
+    ci: float = 0.95,
+    method: str = "percentile",
+    seed: int = 0,
+) -> dict[str, Any]:
+    """Estimate bootstrap confidence intervals for one- and two-sample statistics."""
+    if n_resamples <= 0:
+        raise ValueError("n_resamples must be positive.")
+    if not (0.0 < ci < 1.0):
+        raise ValueError("ci must be in (0, 1).")
+
+    x_arr = _as_array(x, "x")
+    y_arr = _as_array(y, "y") if y is not None else None
+
+    if method == "bca":
+        try:
+            from scipy import stats as sp_stats
+        except ImportError as exc:
+            raise ImportError(_STATS_IMPORT_ERROR) from exc
+
+        alpha = 1.0 - ci
+        if y_arr is None:
+            stat_fun: Any
+            if stat == "mean":
+                stat_fun = np.mean
+            elif stat == "median":
+                stat_fun = np.median
+            else:
+                raise ValueError(f"stat '{stat}' requires y values.")
+            bres = sp_stats.bootstrap(
+                (x_arr,),
+                stat_fun,
+                confidence_level=ci,
+                n_resamples=n_resamples,
+                method="BCa",
+                random_state=seed,
+            )
+            ci_low = float(bres.confidence_interval.low)
+            ci_high = float(bres.confidence_interval.high)
+            estimate = _calc_stat(x_arr, y_arr, stat)
+            rng = np.random.default_rng(seed)
+            samples = np.empty(n_resamples, dtype=float)
+            n_x = x_arr.size
+            for idx in range(n_resamples):
+                boot_x = x_arr[rng.integers(0, n_x, size=n_x)]
+                samples[idx] = _calc_stat(boot_x, None, stat)
+        else:
+            if stat not in {"diff_means", "diff_medians"}:
+                raise ValueError(f"stat '{stat}' is not valid for two-sample BCa.")
+            rng = np.random.default_rng(seed)
+            samples = np.empty(n_resamples, dtype=float)
+            n_x = x_arr.size
+            n_y = y_arr.size
+            for idx in range(n_resamples):
+                boot_x = x_arr[rng.integers(0, n_x, size=n_x)]
+                boot_y = y_arr[rng.integers(0, n_y, size=n_y)]
+                samples[idx] = _calc_stat(boot_x, boot_y, stat)
+            ci_low = float(np.quantile(samples, alpha / 2.0))
+            ci_high = float(np.quantile(samples, 1.0 - alpha / 2.0))
+            estimate = _calc_stat(x_arr, y_arr, stat)
+
+        distribution_summary = {
+            "n": int(samples.size),
+            "std": float(np.std(samples, ddof=1)),
+            "skew": float(
+                ((samples - samples.mean()) ** 3).mean() / (np.std(samples) ** 3 + 1e-12)
+            ),
+        }
+        return {
+            "estimate": estimate,
+            "ci_low": ci_low,
+            "ci_high": ci_high,
+            "distribution_summary": distribution_summary,
+            "method_used": method,
+            "interpretation": _render_ci_text(
+                estimate=estimate,
+                ci_low=ci_low,
+                ci_high=ci_high,
+                ci=ci,
+                stat=stat,
+            ),
+        }
+
+    if method != "percentile":
+        raise ValueError("method must be one of: percentile, bca")
+
+    rng = np.random.default_rng(seed)
+    samples = np.empty(n_resamples, dtype=float)
+    n_x = x_arr.size
+    n_y = y_arr.size if y_arr is not None else 0
+    for idx in range(n_resamples):
+        boot_x = x_arr[rng.integers(0, n_x, size=n_x)]
+        boot_y_opt = y_arr[rng.integers(0, n_y, size=n_y)] if y_arr is not None else None
+        samples[idx] = _calc_stat(boot_x, boot_y_opt, stat)
+
+    alpha = 1.0 - ci
+    ci_low = float(np.quantile(samples, alpha / 2.0))
+    ci_high = float(np.quantile(samples, 1.0 - alpha / 2.0))
+    estimate = _calc_stat(x_arr, y_arr, stat)
+
+    distribution_summary = {
+        "n": int(samples.size),
+        "std": float(np.std(samples, ddof=1)),
+        "skew": float(((samples - samples.mean()) ** 3).mean() / (np.std(samples) ** 3 + 1e-12)),
+    }
+    return {
+        "estimate": estimate,
+        "ci_low": ci_low,
+        "ci_high": ci_high,
+        "distribution_summary": distribution_summary,
+        "method_used": method,
+        "interpretation": _render_ci_text(
+            estimate=estimate,
+            ci_low=ci_low,
+            ci_high=ci_high,
+            ci=ci,
+            stat=stat,
+        ),
+    }
+
+
+def permutation_test(
+    x: Any,
+    y: Any,
+    *,
+    stat: str = "diff_means",
+    n_permutations: int = 20000,
+    alternative: str = "two-sided",
+    seed: int = 0,
+) -> dict[str, Any]:
+    """Run a two-sample permutation test."""
+    if n_permutations <= 0:
+        raise ValueError("n_permutations must be positive.")
+    if alternative not in {"two-sided", "greater", "less"}:
+        raise ValueError("alternative must be one of: two-sided, greater, less")
+
+    x_arr = _as_array(x, "x")
+    y_arr = _as_array(y, "y")
+    observed = _calc_stat(x_arr, y_arr, stat)
+
+    rng = np.random.default_rng(seed)
+    pooled = np.concatenate([x_arr, y_arr])
+    n_x = x_arr.size
+    perm_stats = np.empty(n_permutations, dtype=float)
+
+    for idx in range(n_permutations):
+        perm = rng.permutation(pooled)
+        perm_stats[idx] = _calc_stat(perm[:n_x], perm[n_x:], stat)
+
+    if alternative == "two-sided":
+        p_value = float((np.abs(perm_stats) >= abs(observed)).mean())
+    elif alternative == "greater":
+        p_value = float((perm_stats >= observed).mean())
+    else:
+        p_value = float((perm_stats <= observed).mean())
+
+    return {
+        "p_value": p_value,
+        "observed_stat": float(observed),
+        "stat": stat,
+        "alternative": alternative,
+        "interpretation": _render_permutation_text(
+            p_value=p_value,
+            stat_name=stat,
+            alternative=alternative,
+        ),
+    }
+
+
+def rank_tests_one_stop(
+    x: Any,
+    y: Any | None = None,
+    groups: Sequence[Any] | None = None,
+    *,
+    paired: bool | None = None,
+    kind: str | None = None,
+    alternative: str = "two-sided",
+    alpha: float = 0.05,
+) -> dict[str, Any]:
+    """Dispatch to a nonparametric rank test with consistent structured output."""
+    try:
+        from scipy import stats as sp_stats
+    except ImportError as exc:
+        raise ImportError(_STATS_IMPORT_ERROR) from exc
+
+    x_arr = _as_array(x, "x")
+    if kind is None:
+        if groups is not None:
+            kind = "friedman" if paired else "kruskal"
+        elif y is not None:
+            kind = "wilcoxon" if paired else "mannwhitney"
+        else:
+            raise ValueError("Provide y or groups to select a rank test.")
+
+    effect_size: float | None = None
+    result: dict[str, Any]
+    guidance = [
+        "Report exact sample sizes and handling of ties.",
+        "Pair p-values with effect size and uncertainty context.",
+        "Avoid causal claims from rank tests alone.",
+    ]
+
+    if kind == "mannwhitney":
+        if y is None:
+            raise ValueError("mannwhitney requires y.")
+        y_arr = _as_array(y, "y")
+        stat_val, p_value = sp_stats.mannwhitneyu(x_arr, y_arr, alternative=alternative)
+        n1, n2 = x_arr.size, y_arr.size
+        effect_size = 1.0 - 2.0 * float(stat_val) / float(n1 * n2)
+        result = {"test": "mannwhitney", "statistic": float(stat_val), "p_value": float(p_value)}
+    elif kind == "wilcoxon":
+        if y is None:
+            raise ValueError("wilcoxon requires y.")
+        y_arr = _as_array(y, "y")
+        stat_val, p_value = sp_stats.wilcoxon(x_arr, y_arr, alternative=alternative)
+        n = x_arr.size
+        max_w = n * (n + 1) / 2.0
+        effect_size = 1.0 - 2.0 * float(stat_val) / max_w
+        result = {"test": "wilcoxon", "statistic": float(stat_val), "p_value": float(p_value)}
+    elif kind == "kruskal":
+        if groups is None:
+            raise ValueError("kruskal requires groups as list-like samples.")
+        arrays = [_as_array(g, f"group_{idx}") for idx, g in enumerate(groups)]
+        stat_val, p_value = sp_stats.kruskal(*arrays)
+        n_total = int(sum(len(g) for g in arrays))
+        k = len(arrays)
+        effect_size = float((stat_val - k + 1) / (n_total - k)) if n_total > k else 0.0
+        result = {"test": "kruskal", "statistic": float(stat_val), "p_value": float(p_value)}
+    elif kind == "friedman":
+        if groups is None:
+            raise ValueError("friedman requires groups as repeated-measures samples.")
+        arrays = [_as_array(g, f"group_{idx}") for idx, g in enumerate(groups)]
+        stat_val, p_value = sp_stats.friedmanchisquare(*arrays)
+        n = len(arrays[0])
+        k = len(arrays)
+        effect_size = float(stat_val / (n * (k - 1))) if n > 0 and k > 1 else 0.0
+        result = {"test": "friedman", "statistic": float(stat_val), "p_value": float(p_value)}
+    else:
+        raise ValueError("kind must be one of: mannwhitney, wilcoxon, kruskal, friedman")
+
+    result["effect_size"] = effect_size
+    result["alpha"] = alpha
+    result["interpretation"] = _render_np_test_text(
+        test_name=result["test"],
+        p_value=result["p_value"],
+        alpha=alpha,
+        effect_size=effect_size,
+    )
+    result["reporting_guidance"] = guidance
+    return result
+
+
+def _load_power_engines() -> tuple[Any, Any]:
+    try:
+        from statsmodels.stats.power import TTestIndPower, TTestPower
+    except ImportError as exc:
+        raise ImportError(_POWER_IMPORT_ERROR) from exc
+    return TTestIndPower(), TTestPower()
+
+
+def _validate_common_inputs(
+    *,
+    test: str,
+    alpha: float,
+    power: float | None = None,
+    ratio: float = 1.0,
+    alternative: str,
+) -> None:
+    if test not in _SUPPORTED_TESTS:
+        valid = ", ".join(sorted(_SUPPORTED_TESTS))
+        raise ValueError(f"test must be one of: {valid}")
+    if not (0.0 < alpha < 1.0):
+        raise ValueError("alpha must be in (0, 1).")
+    if power is not None and not (0.0 < power < 1.0):
+        raise ValueError("power must be in (0, 1).")
+    if ratio <= 0:
+        raise ValueError("ratio must be positive.")
+    if alternative not in _SUPPORTED_ALTERNATIVES:
+        valid = ", ".join(sorted(_SUPPORTED_ALTERNATIVES))
+        raise ValueError(f"alternative must be one of: {valid}")
+
+
+def _two_sample_allocation_from_n(total_n: int, ratio: float) -> tuple[int, int]:
+    n1 = max(1, round(total_n / (1.0 + ratio)))
+    if n1 >= total_n:
+        n1 = total_n - 1
+    n2 = total_n - n1
+    if n2 <= 0:
+        n2 = 1
+        n1 = total_n - n2
+    return n1, n2
+
+
+def _compute_power(
+    effect_size: float,
+    *,
+    n: int,
+    test: str,
+    alpha: float,
+    ratio: float,
+    alternative: str,
+) -> float:
+    ind_power, one_power = _load_power_engines()
+    effect = abs(effect_size)
+    if test == "two_sample_t":
+        n1, n2 = _two_sample_allocation_from_n(n, ratio)
+        return float(
+            ind_power.power(
+                effect_size=effect,
+                nobs1=n1,
+                alpha=alpha,
+                ratio=(n2 / n1),
+                alternative=alternative,
+            )
+        )
+    return float(one_power.power(effect_size=effect, nobs=n, alpha=alpha, alternative=alternative))
+
+
+def estimate_sample_size(
+    effect_size: float,
+    *,
+    test: str,
+    alpha: float = 0.05,
+    power: float = 0.8,
+    ratio: float = 1.0,
+    alternative: str = "two-sided",
+) -> dict[str, Any]:
+    """Estimate total sample size for supported t-test families."""
+    _validate_common_inputs(
+        test=test,
+        alpha=alpha,
+        power=power,
+        ratio=ratio,
+        alternative=alternative,
+    )
+
+    effect = abs(effect_size)
+    if effect == 0:
+        raise ValueError("effect_size must be non-zero.")
+
+    ind_power, one_power = _load_power_engines()
+    assumptions = ["Effect size is interpreted as Cohen's d."]
+
+    if test == "two_sample_t":
+        nobs1 = float(
+            ind_power.solve_power(
+                effect_size=effect,
+                nobs1=None,
+                alpha=alpha,
+                power=power,
+                ratio=ratio,
+                alternative=alternative,
+            )
+        )
+        n1 = max(1, math.ceil(nobs1))
+        n2 = max(1, math.ceil(n1 * ratio))
+        recommended_n = n1 + n2
+        group_allocation: list[int] | None = [n1, n2]
+        assumptions.append("Group allocation is rounded up while preserving the requested ratio.")
+    else:
+        nobs = float(
+            one_power.solve_power(
+                effect_size=effect,
+                nobs=None,
+                alpha=alpha,
+                power=power,
+                alternative=alternative,
+            )
+        )
+        recommended_n = max(2, math.ceil(nobs))
+        group_allocation = None
+
+    return {
+        "test": test,
+        "effect_size": effect,
+        "alpha": alpha,
+        "target_power": power,
+        "alternative": alternative,
+        "recommended_n": int(recommended_n),
+        "group_allocation": group_allocation,
+        "assumptions": assumptions,
+    }
+
+
+def power_curve(
+    effect_sizes: Sequence[float],
+    *,
+    n: int,
+    test: str,
+    alpha: float = 0.05,
+    ratio: float = 1.0,
+    alternative: str = "two-sided",
+) -> pd.DataFrame:
+    """Compute achieved power over a sequence of effect sizes."""
+    _validate_common_inputs(
+        test=test,
+        alpha=alpha,
+        ratio=ratio,
+        alternative=alternative,
+    )
+    if not effect_sizes:
+        raise ValueError("effect_sizes must not be empty.")
+    if n <= 1:
+        raise ValueError("n must be greater than 1.")
+
+    try:
+        import pandas as pd
+    except ImportError as exc:
+        raise ImportError(_POWER_IMPORT_ERROR) from exc
+
+    rows = [
+        {
+            "effect_size": abs(float(effect_size)),
+            "power": _compute_power(
+                abs(float(effect_size)),
+                n=n,
+                test=test,
+                alpha=alpha,
+                ratio=ratio,
+                alternative=alternative,
+            ),
+        }
+        for effect_size in effect_sizes
+    ]
+    return pd.DataFrame(rows, columns=["effect_size", "power"])
+
+
+def minimum_detectable_effect(
+    n: int,
+    *,
+    test: str,
+    alpha: float = 0.05,
+    power: float = 0.8,
+    ratio: float = 1.0,
+    alternative: str = "two-sided",
+) -> dict[str, Any]:
+    """Solve for the smallest detectable standardized effect size."""
+    _validate_common_inputs(
+        test=test,
+        alpha=alpha,
+        power=power,
+        ratio=ratio,
+        alternative=alternative,
+    )
+    if n <= 1:
+        raise ValueError("n must be greater than 1.")
+
+    low = 1e-6
+    high = 5.0
+    if (
+        _compute_power(high, n=n, test=test, alpha=alpha, ratio=ratio, alternative=alternative)
+        < power
+    ):
+        raise ValueError("Target power is unreachable for effect sizes up to 5.0.")
+
+    for _ in range(100):
+        mid = (low + high) / 2.0
+        achieved = _compute_power(
+            mid,
+            n=n,
+            test=test,
+            alpha=alpha,
+            ratio=ratio,
+            alternative=alternative,
+        )
+        if achieved >= power:
+            high = mid
+        else:
+            low = mid
+        if abs(high - low) < 1e-4:
+            break
+
+    return {
+        "test": test,
+        "n": int(n),
+        "alpha": alpha,
+        "target_power": power,
+        "alternative": alternative,
+        "minimum_detectable_effect": float(high),
+        "assumptions": ["Effect size is interpreted as Cohen's d."],
+    }
+
+
 __all__ = [
     "GroupComparisonResult",
     "MixedEffectsResult",
     "RegressionResult",
+    "bootstrap_ci",
     "compare_groups",
+    "estimate_sample_size",
     "fit_mixed_effects",
     "fit_regression",
+    "minimum_detectable_effect",
+    "permutation_test",
+    "power_curve",
+    "rank_tests_one_stop",
 ]

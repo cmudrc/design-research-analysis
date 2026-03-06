@@ -62,3 +62,25 @@ Statistics Recipe
    y = [1.0, 3.0, 5.0, 7.0]
    reg = fit_regression(X, y, feature_names=["x"])
    print(reg.coefficients, reg.intercept, reg.r2)
+
+Dataset And Provenance Recipe
+-----------------------------
+
+.. code-block:: python
+
+   import pandas as pd
+   from design_research_analysis import (
+       capture_run_context,
+       generate_codebook,
+       profile_dataframe,
+       validate_dataframe,
+       write_run_manifest,
+   )
+
+   frame = pd.DataFrame({"participant_id": [1, 2, 3], "condition": ["A", "A", "B"]})
+   profile = profile_dataframe(frame)
+   validation = validate_dataframe(frame, {"participant_id": {"unique": True, "nullable": False}})
+   codebook = generate_codebook(frame)
+   context = capture_run_context(seed=7)
+   write_run_manifest(context, "artifacts/run_manifest.json")
+   print(profile["n_rows"], validation["ok"], list(codebook["column"]))

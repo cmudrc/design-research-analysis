@@ -88,6 +88,21 @@ class _FakeFigure:
         self.cleared = True
 
 
+class _FakeCodebook:
+    def __init__(self) -> None:
+        self.shape = (2, 3)
+        self.columns = ["column", "inferred_dtype", "description"]
+        self.written_path: str | None = None
+
+    def to_csv(self, path: Path, index: bool = False) -> None:
+        _ = index
+        self.written_path = str(path)
+        Path(path).write_text(
+            "column,inferred_dtype,description\nfirst,integer,\nsecond,string,Condition\n",
+            encoding="utf-8",
+        )
+
+
 def _assert_envelope(payload: dict[str, Any], *, analysis: str, mode: str) -> None:
     assert payload["analysis"] == analysis
     assert payload["mode"] == mode
@@ -429,3 +444,134 @@ def test_cli_invalid_extension_and_missing_x_columns(tmp_path: Path) -> None:
                 "",
             ]
         )
+
+
+def test_cli_profile_dataset_and_validate_dataset_modes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(cli_module, "_load_dataframe", lambda *args, **kwargs: object())
+    monkeypatch.setattr(
+        cli_module,
+        "profile_dataframe",
+        lambda *args, **kwargs: {"n_rows": 3, "warnings": []},
+    )
+
+    profile_json = tmp_path / "profile.json"
+    exit_profile = main(
+        [
+            "profile-dataset",
+            "--input",
+            str(tmp_path / "data.csv"),
+            "--summary-json",
+            str(profile_json),
+        ]
+    )
+    assert exit_profile == 0
+    profile_payload = json.loads(profile_json.read_text(encoding="utf-8"))
+    _assert_envelope(profile_payload, analysis="dataset", mode="profile")
+    assert profile_payload["result"]["n_rows"] == 3
+
+    monkeypatch.setattr(
+        cli_module,
+        "validate_dataframe",
+        lambda *args, **kwargs: {"ok": False, "errors": ["bad"], "warnings": [], "summary": {}},
+    )
+    validate_json = tmp_path / "validate_dataset.json"
+    exit_validate = main(
+        [
+            "validate-dataset",
+            "--input",
+            str(tmp_path / "data.csv"),
+            "--summary-json",
+            str(validate_json),
+            "--schema-json",
+            '{"participant_id": {"unique": true}}',
+        ]
+    )
+    assert exit_validate == 2
+    validate_payload = json.loads(validate_json.read_text(encoding="utf-8"))
+    _assert_envelope(validate_payload, analysis="dataset", mode="validate")
+    assert validate_payload["result"]["ok"] is False
+
+
+def test_cli_validate_dataset_requires_schema_source(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="schema is required"):
+        main(
+            [
+                "validate-dataset",
+                "--input",
+                str(tmp_path / "data.csv"),
+                "--summary-json",
+                str(tmp_path / "summary.json"),
+            ]
+        )
+
+
+def test_cli_generate_codebook_mode(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_codebook = _FakeCodebook()
+    monkeypatch.setattr(cli_module, "_load_dataframe", lambda *args, **kwargs: object())
+    monkeypatch.setattr(cli_module, "generate_codebook", lambda *args, **kwargs: fake_codebook)
+
+    summary_json = tmp_path / "codebook_summary.json"
+    codebook_csv = tmp_path / "codebook.csv"
+    exit_code = main(
+        [
+            "generate-codebook",
+            "--input",
+            str(tmp_path / "data.csv"),
+            "--summary-json",
+            str(summary_json),
+            "--codebook-csv",
+            str(codebook_csv),
+            "--descriptions-json",
+            '{"second": "Condition"}',
+        ]
+    )
+    assert exit_code == 0
+    payload = json.loads(summary_json.read_text(encoding="utf-8"))
+    _assert_envelope(payload, analysis="dataset", mode="codebook")
+    assert payload["result"]["codebook_csv"] == str(codebook_csv)
+    assert codebook_csv.exists()
+
+
+def test_cli_capture_context_mode(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, Any] = {}
+
+    def _fake_capture(*args: object, **kwargs: object) -> dict[str, Any]:
+        captured["capture_kwargs"] = dict(kwargs)
+        return {"random_seed": kwargs.get("seed"), "inputs": []}
+
+    def _fake_manifest(context: dict[str, Any], outpath: str) -> Path:
+        captured["manifest_context"] = dict(context)
+        out = Path(outpath)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text("{}", encoding="utf-8")
+        return out
+
+    monkeypatch.setattr(cli_module, "capture_run_context", _fake_capture)
+    monkeypatch.setattr(cli_module, "write_run_manifest", _fake_manifest)
+
+    summary_json = tmp_path / "context_summary.json"
+    manifest_json = tmp_path / "run_manifest.json"
+    exit_code = main(
+        [
+            "capture-context",
+            "--summary-json",
+            str(summary_json),
+            "--manifest-json",
+            str(manifest_json),
+            "--seed",
+            "7",
+            "--input-path",
+            str(tmp_path / "input.csv"),
+            "--extra-json",
+            '{"stage": "test"}',
+        ]
+    )
+    assert exit_code == 0
+    payload = json.loads(summary_json.read_text(encoding="utf-8"))
+    _assert_envelope(payload, analysis="runtime", mode="capture-context")
+    assert payload["result"]["manifest_json"] == str(manifest_json)
+    assert manifest_json.exists()
+    assert captured["capture_kwargs"]["extra"] == {"stage": "test"}

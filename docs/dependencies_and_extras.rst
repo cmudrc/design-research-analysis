@@ -23,6 +23,8 @@ Optional feature extras:
 
 - `table`:
   - (no additional dependencies; semantic marker for table-focused workflows)
+- `data`:
+  - `pandas`
 - `seq`:
   - `hmmlearn`
   - `networkx`
@@ -51,5 +53,6 @@ Install extras with:
    pip install -e ".[embeddings]"
    pip install -e ".[lang]"
    pip install -e ".[dimred]"
+   pip install -e ".[data]"
    pip install -e ".[stats]"
    pip install -e ".[all]"

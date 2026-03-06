@@ -12,8 +12,10 @@ from typing import Any
 
 import numpy as np
 
+from .dataset import generate_codebook, profile_dataframe, validate_dataframe
 from .dimred import cluster_projection, embed_records, reduce_dimensions
 from .language import compute_language_convergence, fit_topic_model, score_sentiment
+from .runtime import capture_run_context, write_run_manifest
 from .sequence import (
     fit_discrete_hmm_from_table,
     fit_markov_chain_from_table,
@@ -24,6 +26,10 @@ from .stats import compare_groups, fit_mixed_effects, fit_regression
 from .table import UnifiedTableConfig, coerce_unified_table, validate_unified_table
 
 _OUTPUT_SCHEMA_VERSION = "1.0"
+_DATA_IMPORT_ERROR = (
+    "Dataset CLI commands require optional data dependencies. "
+    "Install with `pip install design-research-analysis[data]`."
+)
 
 
 def _load_table(path: str) -> list[dict[str, Any]]:
@@ -98,6 +104,73 @@ def _load_mapper(spec: str | None) -> Any:
     if mapper is None or not callable(mapper):
         raise ValueError(f"Mapper '{spec}' did not resolve to a callable.")
     return mapper
+
+
+def _load_dataframe(path: str) -> Any:
+    input_path = Path(path)
+    suffix = input_path.suffix.lower()
+
+    try:
+        import pandas as pd
+    except ImportError as exc:
+        raise ImportError(_DATA_IMPORT_ERROR) from exc
+
+    if suffix in {".csv", ".tsv"}:
+        delimiter = "," if suffix == ".csv" else "\t"
+        return pd.read_csv(input_path, sep=delimiter)
+
+    if suffix == ".json":
+        payload = json.loads(input_path.read_text(encoding="utf-8"))
+        if isinstance(payload, list):
+            if payload and not all(isinstance(item, dict) for item in payload):
+                raise ValueError("JSON row input must be a list of objects.")
+            return pd.DataFrame(payload)
+        if isinstance(payload, dict):
+            return pd.DataFrame(payload)
+        raise ValueError("JSON input must be a list of objects or a columnar object.")
+
+    raise ValueError("Unsupported dataset input format. Use .csv, .tsv, or .json.")
+
+
+def _parse_json_object(raw_json: str, *, label: str) -> dict[str, Any]:
+    try:
+        loaded = json.loads(raw_json)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Invalid {label}: {exc}") from exc
+    if not isinstance(loaded, dict):
+        raise ValueError(f"{label} must decode to a JSON object.")
+    return loaded
+
+
+def _load_json_object_file(path: str, *, label: str) -> dict[str, Any]:
+    file_path = Path(path)
+    try:
+        loaded = json.loads(file_path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise ValueError(f"{label} file not found: {file_path}") from exc
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Invalid {label} file '{file_path}': {exc}") from exc
+    if not isinstance(loaded, dict):
+        raise ValueError(f"{label} file '{file_path}' must contain a JSON object.")
+    return loaded
+
+
+def _resolve_json_object_source(
+    *,
+    inline_json: str | None,
+    json_file: str | None,
+    label: str,
+    required: bool = False,
+) -> dict[str, Any] | None:
+    if inline_json and json_file:
+        raise ValueError(f"Use either inline {label} JSON or --{label}-json-file, not both.")
+    if inline_json:
+        return _parse_json_object(inline_json, label=label)
+    if json_file:
+        return _load_json_object_file(json_file, label=label)
+    if required:
+        raise ValueError(f"{label} is required.")
+    return None
 
 
 def _cmd_validate_table(args: argparse.Namespace) -> int:
@@ -337,6 +410,83 @@ def _cmd_run_stats(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_profile_dataset(args: argparse.Namespace) -> int:
+    frame = _load_dataframe(args.input)
+    result = profile_dataframe(frame, max_categorical_levels=args.max_categorical_levels)
+    payload = {
+        **_base_payload(analysis="dataset", mode="profile"),
+        "result": result,
+    }
+    _write_json(args.summary_json, payload)
+    return 0
+
+
+def _cmd_validate_dataset(args: argparse.Namespace) -> int:
+    schema = _resolve_json_object_source(
+        inline_json=args.schema_json,
+        json_file=args.schema_json_file,
+        label="schema",
+        required=True,
+    )
+    assert schema is not None  # for static typing
+    frame = _load_dataframe(args.input)
+    result = validate_dataframe(frame, schema)
+    payload = {
+        **_base_payload(analysis="dataset", mode="validate"),
+        "result": result,
+    }
+    _write_json(args.summary_json, payload)
+    return 0 if bool(result.get("ok")) else 2
+
+
+def _cmd_generate_codebook(args: argparse.Namespace) -> int:
+    frame = _load_dataframe(args.input)
+    descriptions = _resolve_json_object_source(
+        inline_json=args.descriptions_json,
+        json_file=args.descriptions_json_file,
+        label="descriptions",
+    )
+
+    codebook = generate_codebook(frame, descriptions=descriptions)
+    output_path = Path(args.codebook_csv)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    codebook.to_csv(output_path, index=False)
+
+    payload = {
+        **_base_payload(analysis="dataset", mode="codebook"),
+        "result": {
+            "n_rows": int(codebook.shape[0]),
+            "columns": list(codebook.columns),
+            "codebook_csv": str(output_path),
+        },
+    }
+    _write_json(args.summary_json, payload)
+    return 0
+
+
+def _cmd_capture_context(args: argparse.Namespace) -> int:
+    extra = _parse_json_object(args.extra_json, label="extra_json") if args.extra_json else None
+    context = capture_run_context(
+        seed=args.seed,
+        input_paths=args.input_path,
+        extra=extra,
+    )
+
+    if args.manifest_json:
+        write_run_manifest(context, args.manifest_json)
+
+    payload = {
+        **_base_payload(analysis="runtime", mode="capture-context"),
+        "context": context,
+        "result": {
+            "manifest_json": args.manifest_json,
+            "n_input_paths": len(args.input_path),
+        },
+    }
+    _write_json(args.summary_json, payload)
+    return 0
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="design-research-analysis")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -345,6 +495,47 @@ def _build_parser() -> argparse.ArgumentParser:
     validate_parser.add_argument("--input", required=True)
     validate_parser.add_argument("--summary-json", required=True)
     validate_parser.set_defaults(func=_cmd_validate_table)
+
+    profile_dataset_parser = subparsers.add_parser(
+        "profile-dataset",
+        help="Profile a tabular dataset and write a summary JSON report.",
+    )
+    profile_dataset_parser.add_argument("--input", required=True)
+    profile_dataset_parser.add_argument("--summary-json", required=True)
+    profile_dataset_parser.add_argument("--max-categorical-levels", type=int, default=20)
+    profile_dataset_parser.set_defaults(func=_cmd_profile_dataset)
+
+    validate_dataset_parser = subparsers.add_parser(
+        "validate-dataset",
+        help="Validate a dataset against a declarative schema.",
+    )
+    validate_dataset_parser.add_argument("--input", required=True)
+    validate_dataset_parser.add_argument("--summary-json", required=True)
+    validate_dataset_parser.add_argument("--schema-json")
+    validate_dataset_parser.add_argument("--schema-json-file")
+    validate_dataset_parser.set_defaults(func=_cmd_validate_dataset)
+
+    generate_codebook_parser = subparsers.add_parser(
+        "generate-codebook",
+        help="Generate a dataset codebook CSV and summary JSON.",
+    )
+    generate_codebook_parser.add_argument("--input", required=True)
+    generate_codebook_parser.add_argument("--summary-json", required=True)
+    generate_codebook_parser.add_argument("--codebook-csv", required=True)
+    generate_codebook_parser.add_argument("--descriptions-json")
+    generate_codebook_parser.add_argument("--descriptions-json-file")
+    generate_codebook_parser.set_defaults(func=_cmd_generate_codebook)
+
+    context_parser = subparsers.add_parser(
+        "capture-context",
+        help="Capture runtime provenance context and optionally write a manifest JSON.",
+    )
+    context_parser.add_argument("--summary-json", required=True)
+    context_parser.add_argument("--manifest-json")
+    context_parser.add_argument("--seed", type=int)
+    context_parser.add_argument("--input-path", action="append", default=[])
+    context_parser.add_argument("--extra-json")
+    context_parser.set_defaults(func=_cmd_capture_context)
 
     language_parser = subparsers.add_parser("run-language", help="Run language analyses.")
     language_parser.add_argument("--input", required=True)

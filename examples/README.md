@@ -9,11 +9,18 @@ analysis families.
 - `language_custom_embedder.py`: language convergence with deterministic embeddings.
 - `dimred_pca.py`: PCA projection and k-means clustering.
 - `stats_regression.py`: OLS regression wrapper usage.
+- `api_surface_walkthrough.py`: broad public API walkthrough and provenance manifest.
 
 Run the full example suite:
 
 ```bash
 make run-examples
+```
+
+Check public API coverage across examples:
+
+```bash
+make examples-coverage
 ```
 
 Run any example with:

@@ -20,7 +20,7 @@ export MPLBACKEND
 
 .PHONY: help check-python check-uv dev install-dev repro lock \
 	lint fmt fmt-check type test qa coverage docstrings-check \
-	runtime-cache run-example run-examples docs docs-build docs-check docs-linkcheck \
+	runtime-cache run-example run-examples examples-coverage docs docs-build docs-check docs-linkcheck \
 	release-check ci clean
 
 help:
@@ -32,6 +32,7 @@ help:
 	@echo "  qa               Run lint, fmt-check, type, and test."
 	@echo "  run-example      Execute the bundled example script."
 	@echo "  run-examples     Execute all example scripts."
+	@echo "  examples-coverage Check public API coverage across examples."
 	@echo "  docs             Build the HTML docs."
 	@echo "  ci               Run the main local CI checks."
 
@@ -85,10 +86,14 @@ run-example: check-python runtime-cache
 	PYTHONPATH=src $(PYTHON) examples/basic_usage.py
 
 run-examples: check-python runtime-cache
-	@for script in $$(ls examples/*.py | sort); do \
+	@set -e; \
+	for script in $$(ls examples/*.py | sort); do \
 		echo "Running $$script"; \
 		PYTHONPATH=src $(PYTHON) "$$script"; \
 	done
+
+examples-coverage: check-python
+	$(PYTHON) scripts/check_example_api_coverage.py --minimum 35
 
 docs-build: check-python runtime-cache
 	PYTHONPATH=src $(SPHINX) -b html docs docs/_build/html -n -W --keep-going -E
@@ -106,7 +111,7 @@ release-check: check-python
 	$(BUILD) --no-isolation
 	$(TWINE) check dist/*
 
-ci: qa coverage docstrings-check docs-check run-examples release-check
+ci: qa coverage docstrings-check docs-check run-examples examples-coverage release-check
 
 clean:
 	rm -rf .coverage .mypy_cache .pytest_cache .ruff_cache artifacts build dist docs/_build

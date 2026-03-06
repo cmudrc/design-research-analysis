@@ -5,10 +5,12 @@
 ## What It Includes
 
 - Unified-table coercion, validation, and mapper-based derived columns
+- Dataset profiling, schema validation, and codebook generation
 - Sequence modeling (Markov chains, discrete HMM, Gaussian HMM)
 - Language analysis (semantic convergence trajectories, topic modeling, sentiment scoring)
 - Embedding and dimensionality reduction (PCA, t-SNE, UMAP)
-- Statistical wrappers (group comparisons, OLS regression, mixed-effects models)
+- Statistical wrappers (group comparisons, OLS regression, mixed-effects models, nonparametrics, power)
+- Runtime provenance helpers (environment detection and reproducibility manifests)
 - Thin CLI for reproducible pipeline runs
 
 ## Install
@@ -28,6 +30,7 @@ pip install -e ".[seq]"
 pip install -e ".[embeddings]"
 pip install -e ".[lang]"
 pip install -e ".[dimred]"
+pip install -e ".[data]"
 pip install -e ".[stats]"
 pip install -e ".[all]"
 ```
@@ -122,6 +125,24 @@ design-research-analysis run-language \
   --trajectory-csv artifacts/language_trajectory.csv
 ```
 
+Profile a dataset:
+
+```bash
+design-research-analysis profile-dataset \
+  --input data/events.csv \
+  --summary-json artifacts/dataset_profile.json
+```
+
+Capture runtime provenance context:
+
+```bash
+design-research-analysis capture-context \
+  --summary-json artifacts/context_summary.json \
+  --manifest-json artifacts/run_manifest.json \
+  --seed 7 \
+  --input-path data/events.csv
+```
+
 ## More Examples
 
 Additional runnable scripts are in `examples/`:
@@ -131,11 +152,18 @@ Additional runnable scripts are in `examples/`:
 - `examples/language_custom_embedder.py`
 - `examples/dimred_pca.py`
 - `examples/stats_regression.py`
+- `examples/api_surface_walkthrough.py`
 
 Run the full example suite:
 
 ```bash
 make run-examples
+```
+
+Check public API coverage across examples:
+
+```bash
+make examples-coverage
 ```
 
 Run any example with:
@@ -164,4 +192,5 @@ Sphinx pages now include:
 - `make test`
 - `make run-example`
 - `make run-examples`
+- `make examples-coverage`
 - `make ci`

@@ -31,6 +31,7 @@ merging.
   - `make docs`
 - If the example changed:
   - `make run-examples`
+  - `make examples-coverage`
 - Pre-merge baseline:
   - `make ci`
 - Pre-publish baseline:

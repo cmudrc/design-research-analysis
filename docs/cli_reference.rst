@@ -40,6 +40,55 @@ Validates schema compliance and writes a JSON report.
      --input data/events.csv \
      --summary-json artifacts/validate.json
 
+``profile-dataset``
+~~~~~~~~~~~~~~~~~~~
+
+Profiles a dataset and writes summary diagnostics (missingness, inferred dtypes, and warnings).
+
+.. code-block:: bash
+
+   design-research-analysis profile-dataset \
+     --input data/events.csv \
+     --summary-json artifacts/dataset_profile.json \
+     --max-categorical-levels 20
+
+``validate-dataset``
+~~~~~~~~~~~~~~~~~~~~
+
+Validates a dataset against a JSON schema object.
+
+.. code-block:: bash
+
+   design-research-analysis validate-dataset \
+     --input data/events.csv \
+     --summary-json artifacts/dataset_validate.json \
+     --schema-json '{"participant_id": {"unique": true, "nullable": false}}'
+
+``generate-codebook``
+~~~~~~~~~~~~~~~~~~~~~
+
+Generates a codebook CSV plus a JSON summary.
+
+.. code-block:: bash
+
+   design-research-analysis generate-codebook \
+     --input data/events.csv \
+     --summary-json artifacts/codebook_summary.json \
+     --codebook-csv artifacts/codebook.csv
+
+``capture-context``
+~~~~~~~~~~~~~~~~~~~
+
+Captures runtime provenance context and optionally writes a manifest JSON file.
+
+.. code-block:: bash
+
+   design-research-analysis capture-context \
+     --summary-json artifacts/context_summary.json \
+     --manifest-json artifacts/run_manifest.json \
+     --seed 7 \
+     --input-path data/events.csv
+
 ``run-language``
 ~~~~~~~~~~~~~~~~
 
