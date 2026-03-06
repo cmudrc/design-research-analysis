@@ -31,6 +31,19 @@ def test_fit_regression_recovers_linear_relationship() -> None:
     assert pytest.approx(result.r2, abs=1e-8) == 1.0
 
 
+def test_fit_regression_input_validation() -> None:
+    with pytest.raises(ValueError, match="X must be a 2D matrix"):
+        fit_regression([1.0, 2.0], [1.0, 2.0])  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="y must be a 1D vector"):
+        fit_regression([[1.0], [2.0]], [[1.0], [2.0]])  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="same number of rows"):
+        fit_regression([[1.0], [2.0]], [1.0])
+    with pytest.raises(ValueError, match="must not be empty"):
+        fit_regression(np.empty((0, 1)), np.empty((0,)))
+    with pytest.raises(ValueError, match="feature_names length"):
+        fit_regression([[1.0], [2.0]], [1.0, 2.0], feature_names=["a", "b"])
+
+
 @pytest.mark.skipif(
     importlib.util.find_spec("statsmodels") is None or importlib.util.find_spec("pandas") is None,
     reason="statsmodels/pandas unavailable",
@@ -49,3 +62,21 @@ def test_fit_mixed_effects_runs_and_returns_structured_result() -> None:
 
     assert isinstance(result.success, bool)
     assert result.backend == "statsmodels"
+
+
+def test_compare_groups_input_validation_errors() -> None:
+    with pytest.raises(ValueError, match="Provide either values/groups"):
+        compare_groups()
+    with pytest.raises(ValueError, match="same length"):
+        compare_groups([1.0, 2.0], ["A"])
+    with pytest.raises(ValueError, match="must not be empty"):
+        compare_groups([], [])
+    with pytest.raises(ValueError, match="At least two groups"):
+        compare_groups([1.0, 2.0], ["A", "A"])
+
+
+def test_fit_mixed_effects_validation_errors() -> None:
+    with pytest.raises(ValueError, match="Unsupported backend"):
+        fit_mixed_effects([], formula="y ~ x", group_column="g", backend="bad")
+    with pytest.raises(ValueError, match="requires at least one row"):
+        fit_mixed_effects([], formula="y ~ x", group_column="g")

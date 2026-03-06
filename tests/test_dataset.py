@@ -52,6 +52,51 @@ def test_validate_dataframe_reports_errors_and_warnings() -> None:
     assert result["warnings"]
 
 
+def test_validate_dataframe_rule_variants() -> None:
+    df = pd.DataFrame(
+        {
+            "id": [1, 2, 3],
+            "score": [10, 20, 30],
+            "group": ["A", "B", "A"],
+            "code": ["X-1", "X-2", "X-3"],
+            "when": pd.to_datetime(["2026-01-01", "2026-01-02", "2026-01-03"]),
+        }
+    )
+    schema = {
+        "id": {"dtype": "integer", "nullable": False, "unique": True},
+        "score": {"dtype": "numeric", "min": 0, "max": 100},
+        "group": {"allowed": ["A", "B"]},
+        "code": {"regex": r"X-\d"},
+        "when": {"dtype": "datetime", "min": pd.Timestamp("2026-01-01")},
+    }
+    result = validate_dataframe(df, schema)
+    assert result["ok"] is True
+
+
+def test_validate_dataframe_dtype_and_bound_errors() -> None:
+    df = pd.DataFrame(
+        {
+            "flag": ["yes", "no"],
+            "score": ["high", "low"],
+            "group": ["A", "C"],
+            "code": ["bad", "X-2"],
+        }
+    )
+    schema = {
+        "flag": {"dtype": "boolean"},
+        "score": {"min": 0, "max": 10},
+        "group": {"allowed": ["A", "B"]},
+        "code": {"regex": r"X-\d"},
+        "unknown_dtype": {"dtype": "imaginary"},
+    }
+    result = validate_dataframe(df, schema)
+    assert result["ok"] is False
+    assert any("does not match declared dtype" in err for err in result["errors"])
+    assert any("cannot use 'min'" in err for err in result["errors"])
+    assert any("outside the allowed set" in err for err in result["errors"])
+    assert any("fail regex validation" in err for err in result["errors"])
+
+
 def test_generate_codebook_preserves_order_and_descriptions() -> None:
     df = pd.DataFrame({"first": [1, 2], "second": ["x", "y"]})
 
