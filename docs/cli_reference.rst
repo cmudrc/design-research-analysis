@@ -7,6 +7,23 @@ Entry point:
 
    design-research-analysis <subcommand> [options]
 
+Output Envelope
+---------------
+
+All ``--summary-json`` outputs include common top-level keys:
+
+- ``analysis``
+- ``mode``
+- ``output_schema_version``
+
+Mapper Spec Format
+------------------
+
+For mapper options (such as ``--actor-mapper``), both formats are supported:
+
+- ``module:function``
+- ``module.function``
+
 Subcommands
 -----------
 

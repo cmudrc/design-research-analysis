@@ -23,6 +23,8 @@ from .sequence import (
 from .stats import compare_groups, fit_mixed_effects, fit_regression
 from .table import UnifiedTableConfig, coerce_unified_table, validate_unified_table
 
+_OUTPUT_SCHEMA_VERSION = "1.0"
+
 
 def _load_table(path: str) -> list[dict[str, Any]]:
     input_path = Path(path)
@@ -74,12 +76,23 @@ def _write_csv(path: str, rows: list[dict[str, Any]]) -> None:
         writer.writerows(rows)
 
 
+def _base_payload(*, analysis: str, mode: str) -> dict[str, Any]:
+    return {
+        "analysis": analysis,
+        "mode": mode,
+        "output_schema_version": _OUTPUT_SCHEMA_VERSION,
+    }
+
+
 def _load_mapper(spec: str | None) -> Any:
     if spec is None:
         return None
-    if ":" not in spec:
-        raise ValueError("Mapper spec must use 'module:function' format.")
-    module_name, func_name = spec.split(":", 1)
+    if ":" in spec:
+        module_name, func_name = spec.split(":", 1)
+    elif "." in spec:
+        module_name, func_name = spec.rsplit(".", 1)
+    else:
+        raise ValueError("Mapper spec must use 'module:function' or 'module.function' format.")
     module = importlib.import_module(module_name)
     mapper = getattr(module, func_name, None)
     if mapper is None or not callable(mapper):
@@ -91,7 +104,8 @@ def _cmd_validate_table(args: argparse.Namespace) -> int:
     rows = _load_table(args.input)
     config = UnifiedTableConfig()
     report = validate_unified_table(rows, config=config)
-    payload = report.to_dict()
+    payload = _base_payload(analysis="table", mode="validate")
+    payload.update(report.to_dict())
     _write_json(args.summary_json, payload)
     return 0 if report.is_valid else 2
 
@@ -107,7 +121,7 @@ def _cmd_run_language(args: argparse.Namespace) -> int:
     sentiment = score_sentiment(rows, text_column=args.text_column)
 
     payload: dict[str, Any] = {
-        "analysis": "language",
+        **_base_payload(analysis="language", mode="language"),
         "convergence": convergence.to_dict(),
         "sentiment": sentiment,
     }
@@ -175,7 +189,7 @@ def _cmd_run_dimred(args: argparse.Namespace) -> int:
     _write_json(
         args.summary_json,
         {
-            "analysis": "dimred",
+            **_base_payload(analysis="dimred", mode=args.method),
             "embedding": embeddings.to_dict(),
             "projection": projection.to_dict(),
             "clustering": clustering,
@@ -205,7 +219,10 @@ def _cmd_run_sequence(args: argparse.Namespace) -> int:
             event_mapper=event_mapper,
             session_mapper=session_mapper,
         )
-        payload = {"analysis": "sequence", "mode": "markov", "result": markov_result.to_dict()}
+        payload = {
+            **_base_payload(analysis="sequence", mode="markov"),
+            "result": markov_result.to_dict(),
+        }
         if args.matrix_png:
             figure, _ = plot_transition_matrix(markov_result, annotate=False)
             figure.savefig(args.matrix_png, dpi=150, bbox_inches="tight")
@@ -226,8 +243,7 @@ def _cmd_run_sequence(args: argparse.Namespace) -> int:
             session_mapper=session_mapper,
         )
         payload = {
-            "analysis": "sequence",
-            "mode": "discrete-hmm",
+            **_base_payload(analysis="sequence", mode="discrete-hmm"),
             "result": discrete_result.to_dict(),
         }
         if args.matrix_png:
@@ -251,8 +267,7 @@ def _cmd_run_sequence(args: argparse.Namespace) -> int:
             text_mapper=text_mapper,
         )
         payload = {
-            "analysis": "sequence",
-            "mode": "text-gaussian-hmm",
+            **_base_payload(analysis="sequence", mode="text-gaussian-hmm"),
             "result": gaussian_result.to_dict(),
         }
         if args.matrix_png:
@@ -274,7 +289,10 @@ def _cmd_run_stats(args: argparse.Namespace) -> int:
             group_column=args.group_column,
             method=args.method,
         )
-        payload = {"analysis": "stats", "mode": "compare", "result": compare_result.to_dict()}
+        payload = {
+            **_base_payload(analysis="stats", mode="compare"),
+            "result": compare_result.to_dict(),
+        }
     elif args.mode == "regression":
         x_columns = [column.strip() for column in args.x_columns.split(",") if column.strip()]
         if not x_columns:
@@ -298,8 +316,7 @@ def _cmd_run_stats(args: argparse.Namespace) -> int:
             add_intercept=True,
         )
         payload = {
-            "analysis": "stats",
-            "mode": "regression",
+            **_base_payload(analysis="stats", mode="regression"),
             "result": regression_result.to_dict(),
         }
     else:
@@ -311,7 +328,10 @@ def _cmd_run_stats(args: argparse.Namespace) -> int:
             reml=args.reml,
             max_iter=args.max_iter,
         )
-        payload = {"analysis": "stats", "mode": "mixed", "result": mixed_result.to_dict()}
+        payload = {
+            **_base_payload(analysis="stats", mode="mixed"),
+            "result": mixed_result.to_dict(),
+        }
 
     _write_json(args.summary_json, payload)
     return 0
@@ -385,11 +405,17 @@ def _build_parser() -> argparse.ArgumentParser:
     sequence_parser.add_argument("--seed", type=int, default=0)
     sequence_parser.add_argument("--backend", default="hmmlearn")
     sequence_parser.add_argument("--model-name", default="all-MiniLM-L6-v2")
-    sequence_parser.add_argument(
+    normalize_group = sequence_parser.add_mutually_exclusive_group()
+    normalize_group.add_argument(
+        "--normalize-embeddings",
+        action="store_true",
+        dest="normalize_embeddings",
+        default=True,
+    )
+    normalize_group.add_argument(
         "--no-normalize-embeddings",
         action="store_false",
         dest="normalize_embeddings",
-        default=True,
     )
     sequence_parser.add_argument("--batch-size", type=int, default=32)
     sequence_parser.add_argument("--device", default="auto")

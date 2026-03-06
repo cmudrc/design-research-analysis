@@ -106,6 +106,8 @@ def test_cli_validate_table_smoke(tmp_path: Path) -> None:
     assert exit_code == 0
     payload = json.loads(summary_json.read_text(encoding="utf-8"))
     assert payload["is_valid"] is True
+    assert payload["analysis"] == "table"
+    assert payload["mode"] == "validate"
 
 
 def test_cli_run_sequence_markov_smoke(tmp_path: Path) -> None:
@@ -127,6 +129,7 @@ def test_cli_run_sequence_markov_smoke(tmp_path: Path) -> None:
 
     assert exit_code == 0
     payload = json.loads(summary_json.read_text(encoding="utf-8"))
+    assert payload["analysis"] == "sequence"
     assert payload["mode"] == "markov"
     assert "transition_matrix" in payload["result"]
 
@@ -154,6 +157,7 @@ def test_cli_run_stats_regression_smoke(tmp_path: Path) -> None:
 
     assert exit_code == 0
     payload = json.loads(summary_json.read_text(encoding="utf-8"))
+    assert payload["analysis"] == "stats"
     assert payload["mode"] == "regression"
     assert "coefficients" in payload["result"]
 
@@ -194,6 +198,15 @@ def test_cli_load_mapper_validation_paths(monkeypatch: pytest.MonkeyPatch) -> No
         cli_module._load_mapper("fake_mapper_mod:not_callable")
 
 
+def test_cli_load_mapper_accepts_dotted_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_mapper = lambda row: row  # noqa: E731
+    fake_module = SimpleNamespace(mapper=fake_mapper)
+    monkeypatch.setitem(sys.modules, "fake_mapper_pkg", fake_module)
+
+    loaded = cli_module._load_mapper("fake_mapper_pkg.mapper")
+    assert loaded is fake_mapper
+
+
 def test_cli_run_language_topic_error_and_trajectory_output(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -231,6 +244,8 @@ def test_cli_run_language_topic_error_and_trajectory_output(
     assert exit_code == 0
     payload = json.loads(summary_json.read_text(encoding="utf-8"))
     assert "topic_model_error" in payload
+    assert payload["analysis"] == "language"
+    assert payload["mode"] == "language"
     assert trajectory_csv.read_text(encoding="utf-8").startswith("group,step,semantic_distance")
 
 
@@ -275,6 +290,7 @@ def test_cli_run_dimred_with_stubbed_backends(
     assert exit_code == 0
     payload = json.loads(summary_json.read_text(encoding="utf-8"))
     assert payload["analysis"] == "dimred"
+    assert payload["mode"] == "pca"
     assert projection_csv.exists()
 
 
