@@ -132,6 +132,12 @@ Additional runnable scripts are in `examples/`:
 - `examples/dimred_pca.py`
 - `examples/stats_regression.py`
 
+Run the full example suite:
+
+```bash
+make run-examples
+```
+
 Run any example with:
 
 ```bash
@@ -156,4 +162,6 @@ Sphinx pages now include:
 - `make lint`
 - `make type`
 - `make test`
+- `make run-example`
+- `make run-examples`
 - `make ci`

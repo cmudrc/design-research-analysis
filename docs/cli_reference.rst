@@ -16,6 +16,8 @@ All ``--summary-json`` outputs include common top-level keys:
 - ``mode``
 - ``output_schema_version``
 
+Current schema version: ``1.0``.
+
 Mapper Spec Format
 ------------------
 

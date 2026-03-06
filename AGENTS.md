@@ -30,7 +30,7 @@ merging.
   - `make docs-check`
   - `make docs`
 - If the example changed:
-  - `make run-example`
+  - `make run-examples`
 - Pre-merge baseline:
   - `make ci`
 - Pre-publish baseline:

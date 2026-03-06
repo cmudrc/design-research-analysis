@@ -10,6 +10,12 @@ analysis families.
 - `dimred_pca.py`: PCA projection and k-means clustering.
 - `stats_regression.py`: OLS regression wrapper usage.
 
+Run the full example suite:
+
+```bash
+make run-examples
+```
+
 Run any example with:
 
 ```bash

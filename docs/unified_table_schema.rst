@@ -38,7 +38,7 @@ Key API surfaces:
 - :func:`design_research_analysis.coerce_unified_table`
 - :func:`design_research_analysis.validate_unified_table`
 - :func:`design_research_analysis.derive_columns`
-- :func:`design_research_analysis.group_rows`
+- ``design_research_analysis.table.group_rows``
 
 Example
 -------

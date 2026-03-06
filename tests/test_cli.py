@@ -88,6 +88,12 @@ class _FakeFigure:
         self.cleared = True
 
 
+def _assert_envelope(payload: dict[str, Any], *, analysis: str, mode: str) -> None:
+    assert payload["analysis"] == analysis
+    assert payload["mode"] == mode
+    assert payload["output_schema_version"] == "1.0"
+
+
 def test_cli_validate_table_smoke(tmp_path: Path) -> None:
     input_csv = tmp_path / "input.csv"
     summary_json = tmp_path / "validate.json"
@@ -106,8 +112,7 @@ def test_cli_validate_table_smoke(tmp_path: Path) -> None:
     assert exit_code == 0
     payload = json.loads(summary_json.read_text(encoding="utf-8"))
     assert payload["is_valid"] is True
-    assert payload["analysis"] == "table"
-    assert payload["mode"] == "validate"
+    _assert_envelope(payload, analysis="table", mode="validate")
 
 
 def test_cli_run_sequence_markov_smoke(tmp_path: Path) -> None:
@@ -129,8 +134,7 @@ def test_cli_run_sequence_markov_smoke(tmp_path: Path) -> None:
 
     assert exit_code == 0
     payload = json.loads(summary_json.read_text(encoding="utf-8"))
-    assert payload["analysis"] == "sequence"
-    assert payload["mode"] == "markov"
+    _assert_envelope(payload, analysis="sequence", mode="markov")
     assert "transition_matrix" in payload["result"]
 
 
@@ -157,8 +161,7 @@ def test_cli_run_stats_regression_smoke(tmp_path: Path) -> None:
 
     assert exit_code == 0
     payload = json.loads(summary_json.read_text(encoding="utf-8"))
-    assert payload["analysis"] == "stats"
-    assert payload["mode"] == "regression"
+    _assert_envelope(payload, analysis="stats", mode="regression")
     assert "coefficients" in payload["result"]
 
 
@@ -244,8 +247,7 @@ def test_cli_run_language_topic_error_and_trajectory_output(
     assert exit_code == 0
     payload = json.loads(summary_json.read_text(encoding="utf-8"))
     assert "topic_model_error" in payload
-    assert payload["analysis"] == "language"
-    assert payload["mode"] == "language"
+    _assert_envelope(payload, analysis="language", mode="language")
     assert trajectory_csv.read_text(encoding="utf-8").startswith("group,step,semantic_distance")
 
 
@@ -289,8 +291,7 @@ def test_cli_run_dimred_with_stubbed_backends(
 
     assert exit_code == 0
     payload = json.loads(summary_json.read_text(encoding="utf-8"))
-    assert payload["analysis"] == "dimred"
-    assert payload["mode"] == "pca"
+    _assert_envelope(payload, analysis="dimred", mode="pca")
     assert projection_csv.exists()
 
 
@@ -335,6 +336,8 @@ def test_cli_run_sequence_discrete_and_text_modes_with_matrix_output(
     )
     assert exit_discrete == 0
     assert fake_figure.saved
+    discrete_payload = json.loads(seq_json.read_text(encoding="utf-8"))
+    _assert_envelope(discrete_payload, analysis="sequence", mode="discrete-hmm")
 
     text_json = tmp_path / "text.json"
     exit_text = main(
@@ -350,7 +353,7 @@ def test_cli_run_sequence_discrete_and_text_modes_with_matrix_output(
     )
     assert exit_text == 0
     payload = json.loads(text_json.read_text(encoding="utf-8"))
-    assert payload["mode"] == "text-gaussian-hmm"
+    _assert_envelope(payload, analysis="sequence", mode="text-gaussian-hmm")
 
 
 def test_cli_run_stats_compare_and_mixed_modes_with_stubs(
@@ -384,6 +387,8 @@ def test_cli_run_stats_compare_and_mixed_modes_with_stubs(
         ]
     )
     assert exit_compare == 0
+    compare_payload = json.loads(compare_json.read_text(encoding="utf-8"))
+    _assert_envelope(compare_payload, analysis="stats", mode="compare")
 
     mixed_json = tmp_path / "mixed.json"
     exit_mixed = main(
@@ -398,6 +403,8 @@ def test_cli_run_stats_compare_and_mixed_modes_with_stubs(
         ]
     )
     assert exit_mixed == 0
+    mixed_payload = json.loads(mixed_json.read_text(encoding="utf-8"))
+    _assert_envelope(mixed_payload, analysis="stats", mode="mixed")
 
 
 def test_cli_invalid_extension_and_missing_x_columns(tmp_path: Path) -> None:

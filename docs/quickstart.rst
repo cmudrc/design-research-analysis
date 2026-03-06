@@ -12,11 +12,11 @@ Local development setup:
    make dev
    make test
 
-Run the bundled example:
+Run all bundled examples:
 
 .. code-block:: bash
 
-   make run-example
+   make run-examples
 
 Install optional analysis extras as needed:
 
