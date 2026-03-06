@@ -7,7 +7,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-from design_research_analysis.sequence import fit_markov_chain, plot_state_graph, plot_transition_matrix
+from design_research_analysis.sequence import (
+    fit_markov_chain,
+    plot_state_graph,
+    plot_transition_matrix,
+)
 
 
 def _networkx_available() -> bool:

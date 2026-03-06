@@ -20,10 +20,10 @@ def test_compute_language_convergence_detects_converging_trend() -> None:
     ]
 
     lookup = {
-        "far": [4.0, 0.0],
-        "mid": [2.0, 0.0],
-        "close": [1.0, 0.0],
-        "target": [0.0, 0.0],
+        "far": [0.0, 1.0],
+        "mid": [0.4, 0.9],
+        "close": [0.8, 0.4],
+        "target": [1.0, 0.0],
     }
 
     def _embed(texts: list[str]) -> list[list[float]]:

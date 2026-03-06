@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from design_research_analysis import (
+from design_research_analysis.core import (
     ProjectBlueprint,
     build_default_blueprint,
     describe_project,

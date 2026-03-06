@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
-import re
-from typing import Any
+from typing import Any, TypeGuard
 
 import numpy as np
 
@@ -95,6 +95,12 @@ def _is_blank(value: Any) -> bool:
     return value is None or (isinstance(value, str) and value.strip() == "")
 
 
+def _is_text_sequence(
+    data: Sequence[Mapping[str, Any]] | Sequence[str],
+) -> TypeGuard[Sequence[str]]:
+    return len(data) > 0 and isinstance(data[0], str)
+
+
 def _extract_text_rows(
     data: Sequence[Mapping[str, Any]] | Sequence[str],
     *,
@@ -102,9 +108,9 @@ def _extract_text_rows(
     group_column: str,
     text_mapper: Callable[[Mapping[str, Any]], Any] | None,
 ) -> tuple[list[str], list[str], int]:
-    if data and isinstance(data[0], str):  # type: ignore[index]
-        texts = [str(item) for item in data]  # type: ignore[arg-type]
-        return texts, ["__all__"] * len(texts), len(texts)
+    if _is_text_sequence(data):
+        text_items = [str(item) for item in data]
+        return text_items, ["__all__"] * len(text_items), len(text_items)
 
     rows = coerce_unified_table(data)
     rows = derive_columns(rows, text_mapper=text_mapper)
@@ -262,10 +268,7 @@ def compute_language_convergence(
         slope_by_group[group] = slope
         direction_by_group[group] = direction
 
-    if data and isinstance(data[0], str):  # type: ignore[index]
-        n_observations = len(data)  # type: ignore[arg-type]
-    else:
-        n_observations = len(coerce_unified_table(data))
+    n_observations = len(data) if _is_text_sequence(data) else len(coerce_unified_table(data))
 
     groups = sorted(trajectories)
     return LanguageConvergenceResult(
@@ -290,8 +293,8 @@ def _resolve_text_input(
     *,
     text_column: str,
 ) -> list[str]:
-    if data and isinstance(data[0], str):  # type: ignore[index]
-        return [str(item) for item in data]  # type: ignore[arg-type]
+    if _is_text_sequence(data):
+        return [str(item) for item in data]
 
     rows = coerce_unified_table(data)
     texts: list[str] = []
@@ -366,8 +369,8 @@ def fit_topic_model(
 
     return {
         "n_topics": int(n_topics),
-        "n_documents": int(len(texts)),
-        "vocab_size": int(len(terms)),
+        "n_documents": len(texts),
+        "vocab_size": len(terms),
         "doc_topic_distribution": doc_topic.tolist(),
         "topic_terms": topic_terms,
         "config": {
@@ -413,7 +416,7 @@ def score_sentiment(
 
     scores_array = np.asarray(scores, dtype=float)
     return {
-        "n_documents": int(len(texts)),
+        "n_documents": len(texts),
         "scores": scores,
         "labels": labels,
         "mean_score": float(np.mean(scores_array)) if len(scores_array) else 0.0,

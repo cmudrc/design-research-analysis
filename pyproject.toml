@@ -133,6 +133,8 @@ module = [
   "matplotlib.*",
   "networkx",
   "networkx.*",
+  "scipy",
+  "scipy.*",
   "sentence_transformers",
   "sentence_transformers.*",
   "sklearn",

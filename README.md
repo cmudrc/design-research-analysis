@@ -122,6 +122,34 @@ design-research-analysis run-language \
   --trajectory-csv artifacts/language_trajectory.csv
 ```
 
+## More Examples
+
+Additional runnable scripts are in `examples/`:
+
+- `examples/unified_table_validation.py`
+- `examples/sequence_from_table.py`
+- `examples/language_custom_embedder.py`
+- `examples/dimred_pca.py`
+- `examples/stats_regression.py`
+
+Run any example with:
+
+```bash
+PYTHONPATH=src python examples/<example_name>.py
+```
+
+## Documentation
+
+Sphinx pages now include:
+
+- `quickstart`
+- `workflows`
+- `unified_table_schema`
+- `cli_reference`
+- `analysis_recipes`
+- `dependencies_and_extras`
+- `api`
+
 ## Development Commands
 
 - `make fmt`

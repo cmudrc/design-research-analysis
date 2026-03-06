@@ -1,5 +1,5 @@
 design-research-analysis
-===================
+========================
 
 `design-research-analysis` provides typed utilities for recurring design-research
 analyses over a unified event table. The package includes:
@@ -16,5 +16,8 @@ analyses over a unified event table. The package includes:
 
    quickstart
    workflows
+   unified_table_schema
+   cli_reference
+   analysis_recipes
    dependencies_and_extras
    api

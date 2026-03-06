@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 
@@ -157,10 +157,8 @@ def compare_groups(
             raw_value = row.get(value_column)
             raw_group = row.get(group_column)
             if _is_blank(raw_value) or _is_blank(raw_group):
-                raise ValueError(
-                    f"Row {index} is missing '{value_column}' or '{group_column}'."
-                )
-            resolved_values.append(float(raw_value))
+                raise ValueError(f"Row {index} is missing '{value_column}' or '{group_column}'.")
+            resolved_values.append(float(cast(float | int | str, raw_value)))
             resolved_groups.append(str(raw_group))
         values = resolved_values
         groups = resolved_groups
@@ -217,8 +215,8 @@ def compare_groups(
         group_means=group_means,
         group_sizes=group_sizes,
         config={
-            "n_groups": int(len(samples)),
-            "n_samples": int(len(values)),
+            "n_groups": len(samples),
+            "n_samples": len(values),
             "value_column": value_column,
             "group_column": group_column,
         },
@@ -272,8 +270,7 @@ def fit_regression(
         raise ValueError("feature_names length must match number of features in X.")
 
     weights = {
-        str(name): float(value)
-        for name, value in zip(feature_names, weight_vector, strict=True)
+        str(name): float(value) for name, value in zip(feature_names, weight_vector, strict=True)
     }
     return RegressionResult(
         coefficients=weights,

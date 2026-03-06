@@ -72,7 +72,8 @@ def _collect_from_body(
     for node in body:
         if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
             qualified_name = ".".join((*parents, node.name))
-            if ast.get_docstring(node) is None:
+            is_private = node.name.startswith("_")
+            if not is_private and ast.get_docstring(node) is None:
                 missing.append(
                     MissingDocstring(
                         path=path,

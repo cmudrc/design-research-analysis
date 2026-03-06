@@ -39,9 +39,7 @@ class UnifiedTableConfig:
     def known_columns(self) -> set[str]:
         """Return the known column names implied by this configuration."""
         return (
-            set(self.required_columns)
-            | set(self.recommended_columns)
-            | set(self.optional_columns)
+            set(self.required_columns) | set(self.recommended_columns) | set(self.optional_columns)
         )
 
 
@@ -83,9 +81,7 @@ class UnifiedTableValidationReport:
 def _is_blank(value: Any) -> bool:
     if value is None:
         return True
-    if isinstance(value, str) and value.strip() == "":
-        return True
-    return False
+    return isinstance(value, str) and value.strip() == ""
 
 
 def _parse_timestamp_value(value: Any, *, column: str) -> datetime:
@@ -206,9 +202,8 @@ def coerce_unified_table(
                 except ValueError as exc:
                     raise ValueError(f"Failed to parse timestamp at row {index}: {exc}") from exc
 
-    if (
-        resolved_config.sort_by_timestamp
-        and resolved_config.timestamp_column in _stable_columns(normalized)
+    if resolved_config.sort_by_timestamp and resolved_config.timestamp_column in _stable_columns(
+        normalized
     ):
         ts_column = resolved_config.timestamp_column
         decorated: list[tuple[int, datetime, Row]] = []
@@ -226,8 +221,7 @@ def coerce_unified_table(
         if decorated:
             present_rows = {id(item[2]) for item in decorated}
             sorted_rows = [
-                row
-                for _, _, row in sorted(decorated, key=lambda item: (item[1], item[0]))
+                row for _, _, row in sorted(decorated, key=lambda item: (item[1], item[0]))
             ]
             trailing = [row for row in normalized if id(row) not in present_rows]
             normalized = sorted_rows + trailing
@@ -261,30 +255,20 @@ def validate_unified_table(
         errors.append("Unified table must contain at least one row.")
 
     missing_required = tuple(
-        sorted(
-            column
-            for column in resolved_config.required_columns
-            if column not in column_set
-        )
+        sorted(column for column in resolved_config.required_columns if column not in column_set)
     )
     if missing_required:
         errors.append(f"Missing required columns: {', '.join(missing_required)}.")
 
     missing_recommended = tuple(
-        sorted(
-            column
-            for column in resolved_config.recommended_columns
-            if column not in column_set
-        )
+        sorted(column for column in resolved_config.recommended_columns if column not in column_set)
     )
     if missing_recommended:
         warnings.append(f"Missing recommended columns: {', '.join(missing_recommended)}.")
 
     if not resolved_config.allow_extra_columns:
         extra = sorted(
-            column
-            for column in column_set
-            if column not in resolved_config.known_columns()
+            column for column in column_set if column not in resolved_config.known_columns()
         )
         if extra:
             errors.append(f"Unexpected columns: {', '.join(extra)}.")
@@ -383,10 +367,7 @@ def group_rows(
     grouped: dict[str, list[Row]] = {}
     for row in table:
         key_raw = row.get(key_column)
-        if _is_blank(key_raw):
-            key = "__missing__"
-        else:
-            key = str(key_raw)
+        key = "__missing__" if _is_blank(key_raw) else str(key_raw)
         grouped.setdefault(key, []).append(dict(row))
     return [grouped[key] for key in sorted(grouped)]
 

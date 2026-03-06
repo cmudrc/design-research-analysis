@@ -543,7 +543,7 @@ def fit_discrete_hmm(
             "n_states": int(n_states),
             "n_iter": int(n_iter),
             "seed": int(seed),
-            "n_symbols": int(len(vocab)),
+            "n_symbols": len(vocab),
             "backend": adapter.name,
         },
     )
@@ -774,7 +774,7 @@ def fit_text_gaussian_hmm_from_table(
             "source": "table",
             "text_column": text_column,
             "session_column": session_column,
-            "n_sessions": int(len(ordered_sessions)),
+            "n_sessions": len(ordered_sessions),
         }
     )
     return result
@@ -846,6 +846,8 @@ __all__ = [
     "DiscreteHMMResult",
     "GaussianHMMResult",
     "MarkovChainResult",
+    "_state_labels",
+    "_transition_like_matrix",
     "decode_hmm",
     "fit_discrete_hmm",
     "fit_discrete_hmm_from_table",
@@ -854,6 +856,4 @@ __all__ = [
     "fit_markov_chain_from_table",
     "fit_text_gaussian_hmm",
     "fit_text_gaussian_hmm_from_table",
-    "_state_labels",
-    "_transition_like_matrix",
 ]

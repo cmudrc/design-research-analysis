@@ -1,0 +1,64 @@
+Unified Table Schema
+====================
+
+Purpose
+-------
+
+The unified table schema is the canonical input contract across all analysis
+families in this package. It enables repeatable pipelines while still allowing
+loose real-world data.
+
+Column Expectations
+-------------------
+
+Required:
+
+- ``timestamp``
+
+Strongly recommended:
+
+- ``record_id``
+- ``text``
+- ``session_id``
+- ``actor_id``
+- ``event_type``
+
+Optional:
+
+- ``meta_json``
+
+Loose Schema Strategy
+---------------------
+
+Missing values for ``actor_id`` and ``event_type`` can be derived with
+deterministic mapper functions before running sequence analyses.
+
+Key API surfaces:
+
+- :func:`design_research_analysis.coerce_unified_table`
+- :func:`design_research_analysis.validate_unified_table`
+- :func:`design_research_analysis.derive_columns`
+- :func:`design_research_analysis.group_rows`
+
+Example
+-------
+
+.. code-block:: python
+
+   from design_research_analysis import (
+       derive_columns,
+       validate_unified_table,
+   )
+
+   rows = [
+       {"timestamp": "2026-01-01T10:00:00Z", "text": "hello", "speaker": "alice"},
+       {"timestamp": "2026-01-01T10:00:01Z", "text": "world", "speaker": "bob"},
+   ]
+
+   rows = derive_columns(
+       rows,
+       actor_mapper=lambda row: row["speaker"],
+       event_mapper=lambda _row: "utterance",
+   )
+   report = validate_unified_table(rows)
+   assert report.is_valid

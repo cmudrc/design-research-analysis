@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import argparse
 import csv
-from datetime import datetime
 import importlib
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -166,7 +166,7 @@ def _cmd_run_dimred(args: argparse.Namespace) -> int:
 
     projection_rows: list[dict[str, Any]] = []
     for idx, record_id in enumerate(embeddings.record_ids):
-        row = {"record_id": record_id}
+        row: dict[str, Any] = {"record_id": record_id}
         for component in range(projection.projection.shape[1]):
             row[f"component_{component + 1}"] = float(projection.projection[idx, component])
         row["cluster_label"] = int(clustering["labels"][idx])
@@ -193,7 +193,7 @@ def _cmd_run_sequence(args: argparse.Namespace) -> int:
     text_mapper = _load_mapper(args.text_mapper)
 
     if args.mode == "markov":
-        result = fit_markov_chain_from_table(
+        markov_result = fit_markov_chain_from_table(
             rows,
             order=args.order,
             smoothing=args.smoothing,
@@ -205,13 +205,13 @@ def _cmd_run_sequence(args: argparse.Namespace) -> int:
             event_mapper=event_mapper,
             session_mapper=session_mapper,
         )
-        payload = {"analysis": "sequence", "mode": "markov", "result": result.to_dict()}
+        payload = {"analysis": "sequence", "mode": "markov", "result": markov_result.to_dict()}
         if args.matrix_png:
-            figure, _ = plot_transition_matrix(result, annotate=False)
+            figure, _ = plot_transition_matrix(markov_result, annotate=False)
             figure.savefig(args.matrix_png, dpi=150, bbox_inches="tight")
             figure.clf()
     elif args.mode == "discrete-hmm":
-        result = fit_discrete_hmm_from_table(
+        discrete_result = fit_discrete_hmm_from_table(
             rows,
             n_states=args.n_states,
             n_iter=args.n_iter,
@@ -225,13 +225,17 @@ def _cmd_run_sequence(args: argparse.Namespace) -> int:
             event_mapper=event_mapper,
             session_mapper=session_mapper,
         )
-        payload = {"analysis": "sequence", "mode": "discrete-hmm", "result": result.to_dict()}
+        payload = {
+            "analysis": "sequence",
+            "mode": "discrete-hmm",
+            "result": discrete_result.to_dict(),
+        }
         if args.matrix_png:
-            figure, _ = plot_transition_matrix(result, annotate=False)
+            figure, _ = plot_transition_matrix(discrete_result, annotate=False)
             figure.savefig(args.matrix_png, dpi=150, bbox_inches="tight")
             figure.clf()
     else:
-        result = fit_text_gaussian_hmm_from_table(
+        gaussian_result = fit_text_gaussian_hmm_from_table(
             rows,
             text_column=args.text_column,
             session_column=args.session_column,
@@ -246,9 +250,13 @@ def _cmd_run_sequence(args: argparse.Namespace) -> int:
             session_mapper=session_mapper,
             text_mapper=text_mapper,
         )
-        payload = {"analysis": "sequence", "mode": "text-gaussian-hmm", "result": result.to_dict()}
+        payload = {
+            "analysis": "sequence",
+            "mode": "text-gaussian-hmm",
+            "result": gaussian_result.to_dict(),
+        }
         if args.matrix_png:
-            figure, _ = plot_transition_matrix(result, annotate=False)
+            figure, _ = plot_transition_matrix(gaussian_result, annotate=False)
             figure.savefig(args.matrix_png, dpi=150, bbox_inches="tight")
             figure.clf()
 
@@ -260,13 +268,13 @@ def _cmd_run_stats(args: argparse.Namespace) -> int:
     rows = _load_table(args.input)
 
     if args.mode == "compare":
-        result = compare_groups(
+        compare_result = compare_groups(
             data=rows,
             value_column=args.value_column,
             group_column=args.group_column,
             method=args.method,
         )
-        payload = {"analysis": "stats", "mode": "compare", "result": result.to_dict()}
+        payload = {"analysis": "stats", "mode": "compare", "result": compare_result.to_dict()}
     elif args.mode == "regression":
         x_columns = [column.strip() for column in args.x_columns.split(",") if column.strip()]
         if not x_columns:
@@ -283,10 +291,19 @@ def _cmd_run_stats(args: argparse.Namespace) -> int:
             except (TypeError, ValueError) as exc:
                 raise ValueError(f"Row {index} contains non-numeric regression values.") from exc
 
-        result = fit_regression(X_rows, y_values, feature_names=x_columns, add_intercept=True)
-        payload = {"analysis": "stats", "mode": "regression", "result": result.to_dict()}
+        regression_result = fit_regression(
+            X_rows,
+            y_values,
+            feature_names=x_columns,
+            add_intercept=True,
+        )
+        payload = {
+            "analysis": "stats",
+            "mode": "regression",
+            "result": regression_result.to_dict(),
+        }
     else:
-        result = fit_mixed_effects(
+        mixed_result = fit_mixed_effects(
             rows,
             formula=args.formula,
             group_column=args.group_column,
@@ -294,7 +311,7 @@ def _cmd_run_stats(args: argparse.Namespace) -> int:
             reml=args.reml,
             max_iter=args.max_iter,
         )
-        payload = {"analysis": "stats", "mode": "mixed", "result": result.to_dict()}
+        payload = {"analysis": "stats", "mode": "mixed", "result": mixed_result.to_dict()}
 
     _write_json(args.summary_json, payload)
     return 0

@@ -60,6 +60,7 @@ class HmmlearnBackend(_BaseHMMBackend):
         n_iter: int,
         seed: int,
     ) -> Any:
+        """Create a configured ``hmmlearn.GaussianHMM`` instance."""
         hmm = self._load_hmm_module()
         return hmm.GaussianHMM(
             n_components=n_states,
@@ -76,6 +77,7 @@ class HmmlearnBackend(_BaseHMMBackend):
         seed: int,
         n_symbols: int,
     ) -> Any:
+        """Create a configured ``hmmlearn.CategoricalHMM`` instance."""
         hmm = self._load_hmm_module()
         if not hasattr(hmm, "CategoricalHMM"):
             raise ImportError(

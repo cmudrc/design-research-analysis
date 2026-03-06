@@ -11,8 +11,17 @@ import pytest
 
 import design_research_analysis.sequence._backend as backend_module
 import design_research_analysis.sequence.models as models_module
-from design_research_analysis.sequence import decode_hmm, fit_discrete_hmm, fit_gaussian_hmm, fit_text_gaussian_hmm
-from design_research_analysis.sequence._backend import HmmlearnBackend, _BaseHMMBackend, get_hmm_backend
+from design_research_analysis.sequence import (
+    decode_hmm,
+    fit_discrete_hmm,
+    fit_gaussian_hmm,
+    fit_text_gaussian_hmm,
+)
+from design_research_analysis.sequence._backend import (
+    HmmlearnBackend,
+    _BaseHMMBackend,
+    get_hmm_backend,
+)
 from design_research_analysis.sequence.visualization import plot_state_graph, plot_transition_matrix
 
 
