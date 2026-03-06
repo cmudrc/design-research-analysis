@@ -53,5 +53,5 @@ def test_plot_state_graph_surfaces_optional_dependency_error(monkeypatch) -> Non
     monkeypatch.setattr(builtins, "__import__", _mock_import)
 
     result = fit_markov_chain([["S", "NP", "VP", "END"]])
-    with pytest.raises(ImportError, match="pip install design_research_analysis\\[seq\\]"):
+    with pytest.raises(ImportError, match="pip install design-research-analysis\\[seq\\]"):
         plot_state_graph(result)

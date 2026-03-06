@@ -21,17 +21,35 @@ The `dev` extra installs the local contributor toolchain:
 
 Optional feature extras:
 
+- `table`:
+  - (no additional dependencies; semantic marker for table-focused workflows)
 - `seq`:
   - `hmmlearn`
   - `networkx`
   - `scipy`
 - `embeddings`:
   - `sentence-transformers`
+- `lang`:
+  - `scikit-learn`
+- `dimred`:
+  - `scikit-learn`
+  - `umap-learn`
+- `stats`:
+  - `scipy`
+  - `statsmodels`
+  - `pandas`
+- `all`:
+  - Installs all optional analysis extras.
 
 Install extras with:
 
 .. code-block:: bash
 
    pip install -e ".[dev]"
+   pip install -e ".[table]"
    pip install -e ".[seq]"
    pip install -e ".[embeddings]"
+   pip install -e ".[lang]"
+   pip install -e ".[dimred]"
+   pip install -e ".[stats]"
+   pip install -e ".[all]"

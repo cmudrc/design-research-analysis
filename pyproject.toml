@@ -41,12 +41,38 @@ dev = [
   "twine>=5.1,<7",
   "uv>=0.6,<1",
 ]
+table = []
 seq = [
   "hmmlearn>=0.3.2,<1",
   "networkx>=3.3,<4",
   "scipy>=1.11,<2",
 ]
 embeddings = ["sentence-transformers>=3.0,<4"]
+lang = [
+  "scikit-learn>=1.5,<2",
+]
+dimred = [
+  "scikit-learn>=1.5,<2",
+  "umap-learn>=0.5.7,<1",
+]
+stats = [
+  "scipy>=1.11,<2",
+  "statsmodels>=0.14,<1",
+  "pandas>=2.2,<3",
+]
+all = [
+  "hmmlearn>=0.3.2,<1",
+  "networkx>=3.3,<4",
+  "scipy>=1.11,<2",
+  "sentence-transformers>=3.0,<4",
+  "scikit-learn>=1.5,<2",
+  "umap-learn>=0.5.7,<1",
+  "statsmodels>=0.14,<1",
+  "pandas>=2.2,<3",
+]
+
+[project.scripts]
+design-research-analysis = "design_research_analysis.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/cmudrc/design-research-analysis"
@@ -109,5 +135,13 @@ module = [
   "networkx.*",
   "sentence_transformers",
   "sentence_transformers.*",
+  "sklearn",
+  "sklearn.*",
+  "umap",
+  "umap.*",
+  "pandas",
+  "pandas.*",
+  "statsmodels",
+  "statsmodels.*",
 ]
 ignore_missing_imports = true

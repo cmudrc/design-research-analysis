@@ -1,8 +1,8 @@
 # Examples
 
-The examples in this template stay intentionally small.
+The examples in this repository demonstrate unified-table workflows.
 
-- `basic_usage.py` prints the default project blueprint summary.
+- `basic_usage.py` validates a unified table, fits a Markov chain, and computes language convergence.
 
 Run it locally with:
 

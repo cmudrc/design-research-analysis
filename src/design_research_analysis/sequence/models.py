@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 from collections import Counter
-from collections.abc import Callable, Hashable, Sequence
+from collections.abc import Callable, Hashable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
 import numpy as np
 
+from ..table import UnifiedTableConfig, coerce_unified_table, derive_columns, validate_unified_table
 from ._backend import get_hmm_backend
 from .embeddings import embed_text
 
@@ -20,6 +21,10 @@ def _serialize_token(token: Token) -> str | int | float | bool | None:
     if token is None or isinstance(token, (str, int, float, bool)):
         return token
     return repr(token)
+
+
+def _is_blank(value: Any) -> bool:
+    return value is None or (isinstance(value, str) and value.strip() == "")
 
 
 def _as_float_matrix(values: Any, *, name: str) -> np.ndarray:
@@ -544,6 +549,237 @@ def fit_discrete_hmm(
     )
 
 
+def _prepare_table_rows(
+    table: Sequence[Mapping[str, Any]],
+    *,
+    config: UnifiedTableConfig | None,
+    actor_mapper: Callable[[Mapping[str, Any]], Any] | None,
+    event_mapper: Callable[[Mapping[str, Any]], Any] | None,
+    session_mapper: Callable[[Mapping[str, Any]], Any] | None,
+    text_mapper: Callable[[Mapping[str, Any]], Any] | None,
+) -> list[dict[str, Any]]:
+    rows = coerce_unified_table(table, config=config)
+    rows = derive_columns(
+        rows,
+        actor_mapper=actor_mapper,
+        event_mapper=event_mapper,
+        session_mapper=session_mapper,
+        text_mapper=text_mapper,
+    )
+    report = validate_unified_table(rows, config=config)
+    if not report.is_valid:
+        raise ValueError("Invalid unified table: " + "; ".join(report.errors))
+    return rows
+
+
+def _extract_grouped_tokens(
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    event_column: str,
+    session_column: str,
+    actor_column: str,
+    include_actor_in_token: bool,
+) -> list[list[Token]]:
+    grouped: dict[str, list[Token]] = {}
+    for index, row in enumerate(rows):
+        event = row.get(event_column)
+        if _is_blank(event):
+            raise ValueError(
+                f"Row {index} is missing '{event_column}'. Provide event values or an event mapper."
+            )
+
+        session_value = row.get(session_column)
+        session = "__all__" if _is_blank(session_value) else str(session_value)
+
+        token: Token
+        if include_actor_in_token:
+            actor = row.get(actor_column)
+            if _is_blank(actor):
+                raise ValueError(
+                    f"Row {index} is missing '{actor_column}' while include_actor_in_token=True."
+                )
+            token = (str(actor), event)
+        else:
+            token = event
+
+        grouped.setdefault(session, []).append(token)
+
+    sequences = [grouped[key] for key in sorted(grouped)]
+    non_empty = [seq for seq in sequences if len(seq) > 0]
+    if not non_empty:
+        raise ValueError("No valid token sequences were produced from the table.")
+    return non_empty
+
+
+def fit_markov_chain_from_table(
+    table: Sequence[Mapping[str, Any]],
+    *,
+    order: int = 1,
+    smoothing: float = 1.0,
+    event_column: str = "event_type",
+    session_column: str = "session_id",
+    actor_column: str = "actor_id",
+    include_actor_in_token: bool = False,
+    actor_mapper: Callable[[Mapping[str, Any]], Any] | None = None,
+    event_mapper: Callable[[Mapping[str, Any]], Any] | None = None,
+    session_mapper: Callable[[Mapping[str, Any]], Any] | None = None,
+    table_config: UnifiedTableConfig | None = None,
+) -> MarkovChainResult:
+    """Fit a Markov chain from unified-table event records."""
+    rows = _prepare_table_rows(
+        table,
+        config=table_config,
+        actor_mapper=actor_mapper,
+        event_mapper=event_mapper,
+        session_mapper=session_mapper,
+        text_mapper=None,
+    )
+    sequences = _extract_grouped_tokens(
+        rows,
+        event_column=event_column,
+        session_column=session_column,
+        actor_column=actor_column,
+        include_actor_in_token=include_actor_in_token,
+    )
+
+    result = fit_markov_chain(sequences, order=order, smoothing=smoothing)
+    result.config.update(
+        {
+            "source": "table",
+            "event_column": event_column,
+            "session_column": session_column,
+            "actor_column": actor_column,
+            "include_actor_in_token": bool(include_actor_in_token),
+        }
+    )
+    return result
+
+
+def fit_discrete_hmm_from_table(
+    table: Sequence[Mapping[str, Any]],
+    *,
+    n_states: int = 3,
+    n_iter: int = 100,
+    seed: int = 0,
+    backend: str = "hmmlearn",
+    event_column: str = "event_type",
+    session_column: str = "session_id",
+    actor_column: str = "actor_id",
+    include_actor_in_token: bool = False,
+    actor_mapper: Callable[[Mapping[str, Any]], Any] | None = None,
+    event_mapper: Callable[[Mapping[str, Any]], Any] | None = None,
+    session_mapper: Callable[[Mapping[str, Any]], Any] | None = None,
+    table_config: UnifiedTableConfig | None = None,
+) -> DiscreteHMMResult:
+    """Fit a discrete HMM from unified-table event records."""
+    rows = _prepare_table_rows(
+        table,
+        config=table_config,
+        actor_mapper=actor_mapper,
+        event_mapper=event_mapper,
+        session_mapper=session_mapper,
+        text_mapper=None,
+    )
+    sequences = _extract_grouped_tokens(
+        rows,
+        event_column=event_column,
+        session_column=session_column,
+        actor_column=actor_column,
+        include_actor_in_token=include_actor_in_token,
+    )
+
+    result = fit_discrete_hmm(
+        sequences,
+        n_states=n_states,
+        n_iter=n_iter,
+        seed=seed,
+        backend=backend,
+    )
+    result.config.update(
+        {
+            "source": "table",
+            "event_column": event_column,
+            "session_column": session_column,
+            "actor_column": actor_column,
+            "include_actor_in_token": bool(include_actor_in_token),
+        }
+    )
+    return result
+
+
+def fit_text_gaussian_hmm_from_table(
+    table: Sequence[Mapping[str, Any]],
+    *,
+    text_column: str = "text",
+    session_column: str = "session_id",
+    n_states: int = 3,
+    embedder: Callable[[Sequence[str]], np.ndarray] | None = None,
+    model_name: str = "all-MiniLM-L6-v2",
+    normalize: bool = True,
+    batch_size: int = 32,
+    device: str = "auto",
+    covariance_type: str = "diag",
+    n_iter: int = 100,
+    seed: int = 0,
+    backend: str = "hmmlearn",
+    session_mapper: Callable[[Mapping[str, Any]], Any] | None = None,
+    text_mapper: Callable[[Mapping[str, Any]], Any] | None = None,
+    table_config: UnifiedTableConfig | None = None,
+) -> GaussianHMMResult:
+    """Embed text from unified-table rows and fit a Gaussian HMM."""
+    rows = _prepare_table_rows(
+        table,
+        config=table_config,
+        actor_mapper=None,
+        event_mapper=None,
+        session_mapper=session_mapper,
+        text_mapper=text_mapper,
+    )
+
+    grouped: dict[str, list[str]] = {}
+    for index, row in enumerate(rows):
+        text = row.get(text_column)
+        if _is_blank(text):
+            raise ValueError(
+                f"Row {index} is missing '{text_column}'. Provide text values or a text mapper."
+            )
+        session_value = row.get(session_column)
+        session = "__all__" if _is_blank(session_value) else str(session_value)
+        grouped.setdefault(session, []).append(str(text))
+
+    if not grouped:
+        raise ValueError("No text observations were found for Gaussian HMM fitting.")
+
+    ordered_sessions = sorted(grouped)
+    sequences = [grouped[key] for key in ordered_sessions]
+    lengths = [len(seq) for seq in sequences] if len(ordered_sessions) > 1 else None
+    flat_texts = [text for seq in sequences for text in seq]
+
+    result = fit_text_gaussian_hmm(
+        flat_texts,
+        n_states=n_states,
+        embedder=embedder,
+        lengths=lengths,
+        model_name=model_name,
+        normalize=normalize,
+        batch_size=batch_size,
+        device=device,
+        covariance_type=covariance_type,
+        n_iter=n_iter,
+        seed=seed,
+        backend=backend,
+    )
+    result.config.update(
+        {
+            "source": "table",
+            "text_column": text_column,
+            "session_column": session_column,
+            "n_sessions": int(len(ordered_sessions)),
+        }
+    )
+    return result
+
+
 def decode_hmm(
     model_result: GaussianHMMResult | DiscreteHMMResult,
     observations: Any,
@@ -612,9 +848,12 @@ __all__ = [
     "MarkovChainResult",
     "decode_hmm",
     "fit_discrete_hmm",
+    "fit_discrete_hmm_from_table",
     "fit_gaussian_hmm",
     "fit_markov_chain",
+    "fit_markov_chain_from_table",
     "fit_text_gaussian_hmm",
+    "fit_text_gaussian_hmm_from_table",
     "_state_labels",
     "_transition_like_matrix",
 ]
