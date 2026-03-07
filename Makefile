@@ -108,7 +108,7 @@ docs: docs-build
 
 release-check: check-python
 	rm -rf build dist
-	$(BUILD) --no-isolation
+	$(BUILD)
 	$(TWINE) check dist/*
 
 ci: qa coverage docstrings-check docs-check run-examples examples-coverage release-check
