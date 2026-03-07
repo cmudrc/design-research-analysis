@@ -35,8 +35,12 @@ def is_notebook() -> bool:
         return True
 
     try:
-        from IPython import get_ipython
+        ipython_module = importlib.import_module("IPython")
     except ImportError:
+        return False
+
+    get_ipython = getattr(ipython_module, "get_ipython", None)
+    if get_ipython is None:
         return False
 
     shell = get_ipython()
