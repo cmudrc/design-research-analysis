@@ -96,9 +96,11 @@ examples-coverage: check-python
 	$(PYTHON) scripts/check_example_api_coverage.py --minimum 35
 
 docs-build: check-python runtime-cache
+	$(PYTHON) scripts/generate_example_docs.py
 	PYTHONPATH=src $(SPHINX) -b html docs docs/_build/html -n -W --keep-going -E
 
 docs-check: check-python
+	$(PYTHON) scripts/generate_example_docs.py --check
 	$(PYTHON) scripts/check_docs_consistency.py
 
 docs-linkcheck: check-python runtime-cache

@@ -1,12 +1,25 @@
-"""End-to-end example using the unified-table workflow."""
+"""End-to-end example for a single lab design session.
+
+## Introduction
+Use a tiny unified table from one team session to run the most common baseline:
+schema validation, event-sequence transitions, and language convergence.
+
+## Technical Implementation
+1. Validate required and recommended unified-table columns.
+2. Fit a first-order Markov chain from event transitions.
+3. Compute semantic convergence using a deterministic custom embedder.
+
+## Expected Results
+Prints the ordered Markov states, transition matrix, and one convergence label for
+``team-a``.
+
+## References
+- docs/workflows.rst
+"""
 
 from __future__ import annotations
 
-from design_research_analysis import (
-    compute_language_convergence,
-    fit_markov_chain_from_table,
-    validate_unified_table,
-)
+import design_research_analysis as dran
 
 
 def main() -> None:
@@ -35,11 +48,11 @@ def main() -> None:
         },
     ]
 
-    report = validate_unified_table(rows)
+    report = dran.validate_unified_table(rows)
     if not report.is_valid:
         raise RuntimeError(f"Invalid table: {report.errors}")
 
-    markov = fit_markov_chain_from_table(rows, order=1, smoothing=1.0)
+    markov = dran.fit_markov_chain_from_table(rows, order=1, smoothing=1.0)
     print("Markov states:", markov.states)
     print("Transition matrix:")
     print(markov.transition_matrix)
@@ -49,7 +62,7 @@ def main() -> None:
         "review constraints and compare options": [1.5, 0.0],
         "refined concept around shared constraints": [0.0, 0.0],
     }
-    convergence = compute_language_convergence(
+    convergence = dran.compute_language_convergence(
         rows,
         window_size=1,
         embedder=lambda texts: [custom_vectors[text] for text in texts],

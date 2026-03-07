@@ -32,6 +32,7 @@ Start Here
 ----------
 
 - :doc:`quickstart` for a compact end-to-end setup path.
+- :doc:`examples/index` for example-by-example pages generated from runnable script docstrings.
 - :doc:`workflows` for common analysis patterns and API entry points.
 - :doc:`unified_table_schema` for the canonical event-table contract.
 - :doc:`cli_reference` for command-by-command behavior and options.
@@ -47,6 +48,7 @@ Start Here
    :hidden:
 
    quickstart
+   examples/index
    workflows
    unified_table_schema
    cli_reference

@@ -1,10 +1,27 @@
-"""Project vectors with PCA and cluster the resulting coordinates."""
+"""Project ideation vectors with PCA and cluster session-level coordinates.
+
+## Introduction
+Reduce higher-dimensional study vectors to two dimensions for plotting and then
+cluster projected points into interpretable groups.
+
+## Technical Implementation
+1. Build a deterministic in-memory numeric matrix.
+2. Run PCA projection with two components.
+3. Run k-means clustering on projected coordinates.
+
+## Expected Results
+Prints a projection dictionary (shape, method, variance ratio) and a clustering
+dictionary with labels, centers, and config.
+
+## References
+- docs/analysis_recipes.rst
+"""
 
 from __future__ import annotations
 
 import numpy as np
 
-from design_research_analysis import cluster_projection, reduce_dimensions
+import design_research_analysis as dran
 
 
 def main() -> None:
@@ -18,8 +35,8 @@ def main() -> None:
             [0.5, 0.5, 0.8],
         ]
     )
-    projection = reduce_dimensions(vectors, method="pca", n_components=2)
-    clusters = cluster_projection(
+    projection = dran.reduce_dimensions(vectors, method="pca", n_components=2)
+    clusters = dran.cluster_projection(
         projection.projection,
         method="kmeans",
         n_clusters=2,
