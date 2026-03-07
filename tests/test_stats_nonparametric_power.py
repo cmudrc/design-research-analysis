@@ -15,6 +15,10 @@ from design_research_analysis.stats import (
     rank_tests_one_stop,
 )
 
+_HAS_SCIPY = importlib.util.find_spec("scipy") is not None
+_HAS_STATSMODELS = importlib.util.find_spec("statsmodels") is not None
+_HAS_PANDAS = importlib.util.find_spec("pandas") is not None
+
 
 def test_bootstrap_ci_deterministic_bounds() -> None:
     x = np.array([1, 2, 3, 4, 5], dtype=float)
@@ -31,7 +35,7 @@ def test_permutation_detects_shift() -> None:
     assert result["p_value"] < 0.05
 
 
-@pytest.mark.skipif(importlib.util.find_spec("scipy") is None, reason="scipy unavailable")
+@pytest.mark.skipif(not _HAS_SCIPY, reason="scipy unavailable")
 def test_rank_tests_one_stop_dispatches_default() -> None:
     rng = np.random.default_rng(0)
     x = rng.normal(0.0, 1.0, 40)
@@ -42,9 +46,7 @@ def test_rank_tests_one_stop_dispatches_default() -> None:
 
 
 @pytest.mark.parametrize("test_name", ["one_sample_t", "paired_t", "two_sample_t"])
-@pytest.mark.skipif(
-    importlib.util.find_spec("statsmodels") is None, reason="statsmodels unavailable"
-)
+@pytest.mark.skipif(not _HAS_STATSMODELS, reason="statsmodels unavailable")
 def test_estimate_sample_size_supported_tests(test_name: str) -> None:
     result = estimate_sample_size(0.5, test=test_name)
 
@@ -60,9 +62,7 @@ def test_estimate_sample_size_rejects_zero_effect() -> None:
         estimate_sample_size(0.0, test="paired_t")
 
 
-@pytest.mark.skipif(
-    importlib.util.find_spec("statsmodels") is None, reason="statsmodels unavailable"
-)
+@pytest.mark.skipif(not (_HAS_STATSMODELS and _HAS_PANDAS), reason="statsmodels/pandas unavailable")
 def test_power_curve_and_mde_behave_as_expected() -> None:
     curve = power_curve([0.6, 0.2, 0.4], n=48, test="two_sample_t")
     result = minimum_detectable_effect(48, test="two_sample_t", power=0.8)
@@ -105,7 +105,7 @@ def test_bootstrap_ci_additional_paths() -> None:
         bootstrap_ci([1, 2], stat="diff_means")
 
 
-@pytest.mark.skipif(importlib.util.find_spec("scipy") is None, reason="scipy unavailable")
+@pytest.mark.skipif(not _HAS_SCIPY, reason="scipy unavailable")
 def test_bootstrap_bca_and_rank_test_variants() -> None:
     bca = bootstrap_ci([1, 2, 3, 4, 5], stat="mean", method="bca", n_resamples=200, seed=2)
     assert bca["method_used"] == "bca"
@@ -130,7 +130,7 @@ def test_bootstrap_bca_and_rank_test_variants() -> None:
     assert fr["test"] == "friedman"
 
 
-@pytest.mark.skipif(importlib.util.find_spec("scipy") is None, reason="scipy unavailable")
+@pytest.mark.skipif(not _HAS_SCIPY, reason="scipy unavailable")
 def test_rank_tests_validation_errors() -> None:
     with pytest.raises(ValueError, match="Provide y or groups"):
         rank_tests_one_stop([1, 2, 3])
@@ -224,8 +224,12 @@ def test_power_functions_with_fake_engines(monkeypatch) -> None:
     assert two["group_allocation"] is not None
     assert one["group_allocation"] is None
 
-    curve = power_curve([0.2, 0.3], n=24, test="paired_t")
-    assert list(curve.columns) == ["effect_size", "power"]
+    if _HAS_PANDAS:
+        curve = power_curve([0.2, 0.3], n=24, test="paired_t")
+        assert list(curve.columns) == ["effect_size", "power"]
+    else:
+        with pytest.raises(ImportError, match="Power analysis requires optional dependencies"):
+            power_curve([0.2, 0.3], n=24, test="paired_t")
 
     mde = minimum_detectable_effect(24, test="paired_t", power=0.8)
     assert mde["minimum_detectable_effect"] > 0
