@@ -1,79 +1,71 @@
 Quickstart
 ==========
 
-Requires Python 3.12+ and assumes you are working from the repository root.
+This example shows the shortest meaningful path through
+``design-research-analysis``.
 
-Create and activate a virtual environment:
+1. Install
+----------
 
 .. code-block:: bash
 
+   pip install design-research-analysis
+
+Or install from source:
+
+.. code-block:: bash
+
+   git clone https://github.com/cmudrc/design-research-analysis.git
+   cd design-research-analysis
    python -m venv .venv
    source .venv/bin/activate
    python -m pip install --upgrade pip
+   pip install -e .
 
-Path A: Python API
-------------------
+2. Minimal Runnable Example
+---------------------------
 
-Use this when you want analysis setup and execution in notebooks or scripts.
+.. code-block:: python
 
-1. Install development tooling and package dependencies:
+   from design_research_analysis import (
+       coerce_unified_table,
+       fit_markov_chain_from_table,
+       validate_unified_table,
+   )
 
-.. code-block:: bash
+   rows = coerce_unified_table(
+       [
+           {"timestamp": "2026-01-01T00:00:00", "session_id": "s1", "actor_id": "a", "event_type": "ideate"},
+           {"timestamp": "2026-01-01T00:00:05", "session_id": "s1", "actor_id": "a", "event_type": "refine"},
+           {"timestamp": "2026-01-01T00:00:10", "session_id": "s1", "actor_id": "a", "event_type": "evaluate"},
+       ]
+   )
 
-   make dev
+   report = validate_unified_table(rows)
+   if not report.is_valid:
+       raise RuntimeError("; ".join(report.errors))
 
-2. Run a compact API walkthrough example:
+   result = fit_markov_chain_from_table(rows)
+   print(result.states)
 
-.. code-block:: bash
+3. What Happened
+----------------
 
-   PYTHONPATH=src python examples/basic_usage.py
+You validated a unified event table and fit a sequence model from those records.
+This demonstrates the package design: schema discipline first, analysis second.
 
-3. Explore additional runnable examples in ``examples/README.md``.
+4. Where To Go Next
+-------------------
 
-Path B: CLI
------------
+- :doc:`concepts`
+- :doc:`typical_workflow`
+- :doc:`workflows`
+- :doc:`examples/index`
 
-Use this when you want file-driven workflows and machine-readable artifacts.
+Ecosystem Note
+--------------
 
-1. Validate a unified table:
-
-.. code-block:: bash
-
-   design-research-analysis validate-table \
-     --input data/events.csv \
-     --summary-json artifacts/validate.json
-
-2. Run a sequence baseline:
-
-.. code-block:: bash
-
-   design-research-analysis run-sequence \
-     --input data/events.csv \
-     --summary-json artifacts/sequence.json \
-     --mode markov
-
-3. Run language and export trajectory output:
-
-.. code-block:: bash
-
-   design-research-analysis run-language \
-     --input data/events.csv \
-     --summary-json artifacts/language.json \
-     --trajectory-csv artifacts/language_trajectory.csv
-
-Checks and Docs
----------------
-
-.. code-block:: bash
-
-   make test
-   make docs-check
-   make docs-build
-
-Next Steps
-----------
-
-- Install profiles and release maintenance checks: :doc:`dependencies_and_extras`
-- Unified table contract and mapper strategy: :doc:`unified_table_schema`
-- Command reference for all subcommands: :doc:`cli_reference`
-- Supported top-level exports: :doc:`api`
+In a typical study, ``design-research-agents`` provides executable
+participants, ``design-research-problems`` supplies the task,
+``design-research-experiments`` defines the study structure, and
+``design-research-analysis`` interprets the resulting records.

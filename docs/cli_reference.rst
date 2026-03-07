@@ -1,6 +1,9 @@
 CLI Reference
 =============
 
+The CLI is designed for deterministic pipeline integration. Each command writes
+machine-readable summaries that can be versioned and compared across runs.
+
 Entry point:
 
 .. code-block:: bash

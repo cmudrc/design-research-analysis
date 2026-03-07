@@ -1,38 +1,29 @@
 Dependencies and Extras
 =======================
 
-The project keeps runtime dependencies minimal and layers optional analysis
-capabilities behind extras.
-
 Core Install
 ------------
 
 .. code-block:: bash
 
-   pip install -e .
+   pip install design-research-analysis
 
-Runtime dependencies:
+Editable contributor setup:
 
-- ``numpy``
-- ``matplotlib``
+.. code-block:: bash
 
-Development Install
--------------------
+   git clone https://github.com/cmudrc/design-research-analysis.git
+   cd design-research-analysis
+   python -m venv .venv
+   source .venv/bin/activate
+   python -m pip install --upgrade pip
+   pip install -e ".[dev]"
+
+Or use:
 
 .. code-block:: bash
 
    make dev
-
-This installs linting, typing, testing, docs, and release-check tooling.
-
-Reproducible Install
---------------------
-
-.. code-block:: bash
-
-   make repro REPRO_EXTRAS="dev"
-
-The frozen install uses ``uv.lock`` and pinned interpreter ``3.12.12``.
 
 Extras Matrix
 -------------
@@ -42,48 +33,34 @@ Extras Matrix
 
    * - Extra
      - Purpose
-     - Key packages
-   * - ``table``
-     - Semantic marker for table-first workflows
-     - None
    * - ``data``
-     - Dataframe profiling and schema helpers
-     - ``pandas``
+     - DataFrame profiling and schema workflows
    * - ``seq``
-     - Sequence modeling utilities
-     - ``hmmlearn``, ``networkx``, ``scipy``
+     - Sequence and HMM workflows
    * - ``embeddings``
-     - Text embedding backends
-     - ``sentence-transformers``
+     - Sentence embedding backends
    * - ``lang``
-     - Topic modeling and language helpers
-     - ``scikit-learn``
+     - Language/topic modeling workflows
    * - ``dimred``
      - Projection and manifold workflows
-     - ``scikit-learn``, ``umap-learn``
    * - ``stats``
-     - Statistical tests and model wrappers
-     - ``scipy``, ``statsmodels``, ``pandas``
+     - Inferential and model-based statistics
    * - ``all``
-     - Convenience bundle of all optional analysis extras
-     - All optional packages above
+     - Convenience bundle for all analysis extras
+   * - ``dev``
+     - Contributor tooling
 
-Recommended Profiles
---------------------
+``seq`` is usually the first add-on for event-transition studies. ``lang`` and
+``embeddings`` are most useful for discourse and semantic analyses. ``stats`` is
+best when inferential modeling is central. ``all`` is appropriate when building
+a full local research environment.
 
-- Fast contributor loop: ``make dev``
-- Sequence work: ``pip install -e ".[seq]"``
-- Language + embeddings: ``pip install -e ".[lang,embeddings]"``
-- Stats with dataframe helpers: ``pip install -e ".[stats,data]"``
-- Full optional coverage: ``pip install -e ".[all]"``
+Recommended install profiles:
 
-Maintainer Release Baseline
----------------------------
+- sequence-focused studies: ``pip install -e ".[seq]"``
+- language + embedding studies: ``pip install -e ".[lang,embeddings]"``
+- inference-heavy studies: ``pip install -e ".[stats,data]"``
+- broad analysis workstation setup: ``pip install -e ".[all]"``
 
-Use this flow before tagging a release:
-
-1. Use Python ``3.12.12`` (from ``.python-version``).
-2. Regenerate lock data: ``make lock``.
-3. Verify frozen install and checks: ``make repro REPRO_EXTRAS="dev"`` and ``make ci``.
-4. Build release artifacts and validate metadata: ``make release-check``.
-5. Commit lock/dependency updates before tagging.
+Reproducible and release flows are exposed via ``make repro``, ``make lock``,
+and ``make release-check``.

@@ -1,85 +1,43 @@
 Workflows
 =========
 
-Unified Table Contract
-----------------------
+Analysis families map to different empirical questions.
 
-Required column:
+.. list-table::
+   :header-rows: 1
 
-- ``timestamp``
+   * - Family
+     - Use when
+   * - Sequence
+     - Order and transitions matter
+   * - Language
+     - Text content and convergence matter
+   * - Dimensionality reduction
+     - Embedding structure needs inspection/visualization
+   * - Statistics
+     - Effect-size estimation or inference matters
 
-Strongly recommended columns:
+Sequence workflows are centered on transition structure and temporal dynamics.
+Language workflows are centered on discourse and semantic movement. Dimensional
+reduction workflows are centered on structure discovery in learned
+representations. Statistical workflows are centered on hypothesis testing,
+regression, and uncertainty quantification.
 
-- ``record_id``
-- ``text``
-- ``session_id``
-- ``actor_id``
-- ``event_type``
+Subpages
+--------
 
-Optional common column:
+.. toctree::
+   :maxdepth: 1
 
-- ``meta_json``
+   workflows_sequence
+   workflows_language
+   workflows_dimred
+   workflows_stats
 
-Loose schemas are supported. Missing fields can be derived with deterministic
-mapper functions via :func:`design_research_analysis.derive_columns`.
+CLI Integration
+---------------
 
-Core Analysis Families
-----------------------
-
-Sequence
-~~~~~~~~
-
-- :func:`design_research_analysis.fit_markov_chain_from_table`
-- :func:`design_research_analysis.fit_discrete_hmm_from_table`
-- :func:`design_research_analysis.fit_text_gaussian_hmm_from_table`
-
-Language
-~~~~~~~~
-
-- :func:`design_research_analysis.compute_language_convergence`
-- :func:`design_research_analysis.compute_semantic_distance_trajectory`
-- :func:`design_research_analysis.fit_topic_model`
-- :func:`design_research_analysis.score_sentiment`
-
-Embedding / Dimensionality Reduction
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-- :func:`design_research_analysis.embed_records`
-- :func:`design_research_analysis.reduce_dimensions`
-- :func:`design_research_analysis.cluster_projection`
-
-Statistics
-~~~~~~~~~~
-
-- :func:`design_research_analysis.compare_groups`
-- :func:`design_research_analysis.fit_regression`
-- :func:`design_research_analysis.fit_mixed_effects`
-
-CLI
----
-
-Validate a table:
-
-.. code-block:: bash
-
-   design-research-analysis validate-table \
-     --input data/events.csv \
-     --summary-json artifacts/validate.json
-
-Run a sequence model:
-
-.. code-block:: bash
-
-   design-research-analysis run-sequence \
-     --input data/events.csv \
-     --summary-json artifacts/sequence.json \
-     --mode markov
-
-Run language analysis:
-
-.. code-block:: bash
-
-   design-research-analysis run-language \
-     --input data/events.csv \
-     --summary-json artifacts/language.json \
-     --trajectory-csv artifacts/language_trajectory.csv
+The CLI mirrors these families with deterministic JSON summary outputs. Use
+``validate-table`` before analysis-family runs when ingesting new datasets, then
+persist ``--summary-json`` outputs as pipeline artifacts for reproducible
+reporting.
