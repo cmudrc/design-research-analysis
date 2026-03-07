@@ -1,3 +1,7 @@
+:root {
+  --drc-docs-nav-accent: #4d8687;
+}
+
 .wy-side-nav-search > a.icon.icon-home {
   display: flex;
   flex-direction: column;
@@ -16,5 +20,9 @@
 }
 
 .wy-side-nav-search {
-  background-color: #4d8687;
+  background-color: var(--drc-docs-nav-accent);
+}
+
+.wy-nav-top {
+  background-color: var(--drc-docs-nav-accent);
 }
