@@ -1,196 +1,83 @@
 # design-research-analysis
+[![CI](https://github.com/cmudrc/design-research-analysis/actions/workflows/ci.yml/badge.svg)](https://github.com/cmudrc/design-research-analysis/actions/workflows/ci.yml)
+[![Docs](https://github.com/cmudrc/design-research-analysis/actions/workflows/docs-pages.yml/badge.svg)](https://github.com/cmudrc/design-research-analysis/actions/workflows/docs-pages.yml)
 
-`design-research-analysis` is a typed Python package for recurring design-research analyses over a unified event table.
+`design-research-analysis` is the unified-table analysis layer in the cmudrc design research ecosystem.
 
-## What It Includes
+It provides typed, reusable workflows for sequence, language, dimensionality-reduction, and statistical analysis over recurring event logs.
+
+## Overview
+
+This package centers on reproducible analysis workflows with a small top-level API:
 
 - Unified-table coercion, validation, and mapper-based derived columns
-- Dataset profiling, schema validation, and codebook generation
+- Dataset profiling, schema checks, and codebook generation
 - Sequence modeling (Markov chains, discrete HMM, Gaussian HMM)
 - Language analysis (semantic convergence trajectories, topic modeling, sentiment scoring)
-- Embedding and dimensionality reduction (PCA, t-SNE, UMAP)
-- Statistical wrappers (group comparisons, OLS regression, mixed-effects models, nonparametrics, power)
-- Runtime provenance helpers (environment detection and reproducibility manifests)
-- Thin CLI for reproducible pipeline runs
+- Embedding and dimensionality reduction (PCA, t-SNE, UMAP) with clustering helpers
+- Statistical wrappers (group comparisons, OLS regression, mixed-effects models, nonparametrics, and power)
+- Runtime provenance capture for reproducibility manifests
+- A thin CLI for deterministic pipeline runs
 
-## Install
+## Quickstart
 
-Base install:
+Requires Python 3.12+.
+Reproducible release installs are pinned to Python `3.12.12` (`.python-version`).
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e .
-```
-
-Optional extras:
-
-```bash
-pip install -e ".[seq]"
-pip install -e ".[embeddings]"
-pip install -e ".[lang]"
-pip install -e ".[dimred]"
-pip install -e ".[data]"
-pip install -e ".[stats]"
-pip install -e ".[all]"
-```
-
-Contributor toolchain:
-
-```bash
-pip install -e ".[dev]"
+make dev
 make test
 ```
 
-## Unified Table Contract
+Run a compact end-to-end example:
 
-Required column:
-
-- `timestamp`
-
-Strongly recommended columns:
-
-- `record_id`
-- `text`
-- `session_id`
-- `actor_id`
-- `event_type`
-
-Optional common column:
-
-- `meta_json`
-
-Loose schemas are supported. Missing sequence fields can be derived with deterministic mapper functions.
-
-## Minimal API Example
-
-```python
-from design_research_analysis import (
-    compute_language_convergence,
-    fit_markov_chain_from_table,
-    validate_unified_table,
-)
-
-rows = [
-    {"timestamp": "2026-01-01T10:00:00Z", "session_id": "s1", "event_type": "A", "text": "alpha"},
-    {"timestamp": "2026-01-01T10:00:01Z", "session_id": "s1", "event_type": "B", "text": "beta"},
-    {"timestamp": "2026-01-01T10:00:02Z", "session_id": "s1", "event_type": "A", "text": "gamma"},
-]
-
-report = validate_unified_table(rows)
-assert report.is_valid
-
-markov = fit_markov_chain_from_table(rows)
-print(markov.transition_matrix)
-
-embedding_lookup = {
-    "alpha": [2.0, 0.0],
-    "beta": [1.0, 0.0],
-    "gamma": [0.0, 0.0],
-}
-
-convergence = compute_language_convergence(
-    rows,
-    window_size=1,
-    embedder=lambda texts: [embedding_lookup[text] for text in texts],
-)
-print(convergence.direction_by_group)
+```bash
+PYTHONPATH=src python examples/basic_usage.py
 ```
+
+For frozen installs and release-check guidance, see [Dependencies and Extras](https://cmudrc.github.io/design-research-analysis/dependencies_and_extras.html).
 
 ## CLI
 
-Validate input:
+The package installs a `design-research-analysis` CLI:
 
 ```bash
-design-research-analysis validate-table \
-  --input data/events.csv \
-  --summary-json artifacts/validate.json
+design-research-analysis validate-table --input data/events.csv --summary-json artifacts/validate.json
+design-research-analysis run-sequence --input data/events.csv --summary-json artifacts/sequence.json --mode markov
+design-research-analysis run-language --input data/events.csv --summary-json artifacts/language.json --trajectory-csv artifacts/language_trajectory.csv
+design-research-analysis run-dimred --input data/events.csv --summary-json artifacts/dimred.json --projection-csv artifacts/projection.csv
+design-research-analysis run-stats --input data/events.csv --summary-json artifacts/stats.json --mode regression --x-columns x1,x2 --y-column y
 ```
 
-Run sequence analysis:
+## Examples
+
+Start with [examples/README.md](https://github.com/cmudrc/design-research-analysis/blob/main/examples/README.md) for runnable scripts across all analysis families.
+
+## Docs
+
+See the [published documentation](https://cmudrc.github.io/design-research-analysis/) for quickstart, workflow guidance, schema details, CLI reference, and API docs.
+
+Build docs locally with:
 
 ```bash
-design-research-analysis run-sequence \
-  --input data/events.csv \
-  --summary-json artifacts/sequence.json \
-  --mode markov
+make docs
 ```
 
-Run language analysis:
+## Public API
 
-```bash
-design-research-analysis run-language \
-  --input data/events.csv \
-  --summary-json artifacts/language.json \
-  --trajectory-csv artifacts/language_trajectory.csv
-```
+The supported public surface is whatever is exported from `design_research_analysis.__all__`.
 
-Profile a dataset:
+Top-level exports include:
 
-```bash
-design-research-analysis profile-dataset \
-  --input data/events.csv \
-  --summary-json artifacts/dataset_profile.json
-```
+- Table contracts: `UnifiedTableConfig`, `UnifiedTableValidationReport`, `coerce_unified_table`, `derive_columns`, `validate_unified_table`
+- Sequence: `fit_markov_chain_from_table`, `fit_discrete_hmm_from_table`, `fit_text_gaussian_hmm_from_table`, `decode_hmm`, plotting helpers, and result types
+- Language: `compute_language_convergence`, `compute_semantic_distance_trajectory`, `fit_topic_model`, `score_sentiment`
+- Dimensionality reduction: `embed_records`, `reduce_dimensions`, `cluster_projection`
+- Statistics: `compare_groups`, `fit_regression`, `fit_mixed_effects`, `permutation_test`, `bootstrap_ci`, power helpers
+- Dataset + runtime: `profile_dataframe`, `validate_dataframe`, `generate_codebook`, `capture_run_context`, `attach_provenance`, `write_run_manifest`
 
-Capture runtime provenance context:
+## Contributing
 
-```bash
-design-research-analysis capture-context \
-  --summary-json artifacts/context_summary.json \
-  --manifest-json artifacts/run_manifest.json \
-  --seed 7 \
-  --input-path data/events.csv
-```
-
-## More Examples
-
-Additional runnable scripts are in `examples/`:
-
-- `examples/unified_table_validation.py`
-- `examples/sequence_from_table.py`
-- `examples/language_custom_embedder.py`
-- `examples/dimred_pca.py`
-- `examples/stats_regression.py`
-- `examples/api_surface_walkthrough.py`
-
-Run the full example suite:
-
-```bash
-make run-examples
-```
-
-Check public API coverage across examples:
-
-```bash
-make examples-coverage
-```
-
-Run any example with:
-
-```bash
-PYTHONPATH=src python examples/<example_name>.py
-```
-
-## Documentation
-
-Sphinx pages now include:
-
-- `quickstart`
-- `workflows`
-- `unified_table_schema`
-- `cli_reference`
-- `analysis_recipes`
-- `dependencies_and_extras`
-- `api`
-
-## Development Commands
-
-- `make fmt`
-- `make lint`
-- `make type`
-- `make test`
-- `make run-example`
-- `make run-examples`
-- `make examples-coverage`
-- `make ci`
+Contribution workflow and validation gates are documented in [CONTRIBUTING.md](https://github.com/cmudrc/design-research-analysis/blob/main/CONTRIBUTING.md).

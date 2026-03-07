@@ -1,58 +1,89 @@
-Dependencies And Extras
+Dependencies and Extras
 =======================
 
-The base install keeps required runtime dependencies intentionally small:
+The project keeps runtime dependencies minimal and layers optional analysis
+capabilities behind extras.
 
-- `numpy`
-- `matplotlib`
-
-The `dev` extra installs the local contributor toolchain:
-
-- `build`
-- `mypy`
-- `pre-commit`
-- `pytest`
-- `pytest-cov`
-- `ruff`
-- `sphinx`
-- `sphinx-rtd-theme`
-- `twine`
-- `uv`
-
-Optional feature extras:
-
-- `table`:
-  - (no additional dependencies; semantic marker for table-focused workflows)
-- `data`:
-  - `pandas`
-- `seq`:
-  - `hmmlearn`
-  - `networkx`
-  - `scipy`
-- `embeddings`:
-  - `sentence-transformers`
-- `lang`:
-  - `scikit-learn`
-- `dimred`:
-  - `scikit-learn`
-  - `umap-learn`
-- `stats`:
-  - `scipy`
-  - `statsmodels`
-  - `pandas`
-- `all`:
-  - Installs all optional analysis extras.
-
-Install extras with:
+Core Install
+------------
 
 .. code-block:: bash
 
-   pip install -e ".[dev]"
-   pip install -e ".[table]"
-   pip install -e ".[seq]"
-   pip install -e ".[embeddings]"
-   pip install -e ".[lang]"
-   pip install -e ".[dimred]"
-   pip install -e ".[data]"
-   pip install -e ".[stats]"
-   pip install -e ".[all]"
+   pip install -e .
+
+Runtime dependencies:
+
+- ``numpy``
+- ``matplotlib``
+
+Development Install
+-------------------
+
+.. code-block:: bash
+
+   make dev
+
+This installs linting, typing, testing, docs, and release-check tooling.
+
+Reproducible Install
+--------------------
+
+.. code-block:: bash
+
+   make repro REPRO_EXTRAS="dev"
+
+The frozen install uses ``uv.lock`` and pinned interpreter ``3.12.12``.
+
+Extras Matrix
+-------------
+
+.. list-table::
+   :header-rows: 1
+
+   * - Extra
+     - Purpose
+     - Key packages
+   * - ``table``
+     - Semantic marker for table-first workflows
+     - None
+   * - ``data``
+     - Dataframe profiling and schema helpers
+     - ``pandas``
+   * - ``seq``
+     - Sequence modeling utilities
+     - ``hmmlearn``, ``networkx``, ``scipy``
+   * - ``embeddings``
+     - Text embedding backends
+     - ``sentence-transformers``
+   * - ``lang``
+     - Topic modeling and language helpers
+     - ``scikit-learn``
+   * - ``dimred``
+     - Projection and manifold workflows
+     - ``scikit-learn``, ``umap-learn``
+   * - ``stats``
+     - Statistical tests and model wrappers
+     - ``scipy``, ``statsmodels``, ``pandas``
+   * - ``all``
+     - Convenience bundle of all optional analysis extras
+     - All optional packages above
+
+Recommended Profiles
+--------------------
+
+- Fast contributor loop: ``make dev``
+- Sequence work: ``pip install -e ".[seq]"``
+- Language + embeddings: ``pip install -e ".[lang,embeddings]"``
+- Stats with dataframe helpers: ``pip install -e ".[stats,data]"``
+- Full optional coverage: ``pip install -e ".[all]"``
+
+Maintainer Release Baseline
+---------------------------
+
+Use this flow before tagging a release:
+
+1. Use Python ``3.12.12`` (from ``.python-version``).
+2. Regenerate lock data: ``make lock``.
+3. Verify frozen install and checks: ``make repro REPRO_EXTRAS="dev"`` and ``make ci``.
+4. Build release artifacts and validate metadata: ``make release-check``.
+5. Commit lock/dependency updates before tagging.
