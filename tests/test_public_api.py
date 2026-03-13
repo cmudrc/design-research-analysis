@@ -9,6 +9,7 @@ def test_public_exports_match_the_curated_api() -> None:
     """Keep the top-level exports explicit and stable."""
 
     assert package.__all__ == [
+        "ComparisonResult",
         "DecodeResult",
         "DiscreteHMMResult",
         "GaussianHMMResult",

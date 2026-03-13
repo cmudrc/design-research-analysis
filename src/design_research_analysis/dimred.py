@@ -8,6 +8,7 @@ from typing import Any
 
 import numpy as np
 
+from ._comparison import ComparableResultMixin
 from .sequence.embeddings import embed_text
 from .table import coerce_unified_table, derive_columns
 
@@ -18,7 +19,7 @@ _DIMRED_IMPORT_ERROR = (
 
 
 @dataclass(slots=True)
-class EmbeddingResult:
+class EmbeddingResult(ComparableResultMixin):
     """Embedding output container."""
 
     embeddings: np.ndarray
@@ -35,9 +36,27 @@ class EmbeddingResult:
             "config": dict(self.config),
         }
 
+    def _comparison_metric(self) -> str:
+        return "embedding_profile"
+
+    def _comparison_vectors(
+        self,
+        other: EmbeddingResult,
+    ) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
+        return (
+            self.embeddings.reshape(-1),
+            other.embeddings.reshape(-1),
+            {
+                "left_shape": [int(dim) for dim in self.embeddings.shape],
+                "right_shape": [int(dim) for dim in other.embeddings.shape],
+                "left_record_ids": list(self.record_ids),
+                "right_record_ids": list(other.record_ids),
+            },
+        )
+
 
 @dataclass(slots=True)
-class ProjectionResult:
+class ProjectionResult(ComparableResultMixin):
     """Projection output container."""
 
     projection: np.ndarray
@@ -57,6 +76,23 @@ class ProjectionResult:
             ),
             "config": dict(self.config),
         }
+
+    def _comparison_metric(self) -> str:
+        return "projection_profile"
+
+    def _comparison_vectors(
+        self,
+        other: ProjectionResult,
+    ) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
+        return (
+            self.projection.reshape(-1),
+            other.projection.reshape(-1),
+            {
+                "left_shape": [int(dim) for dim in self.projection.shape],
+                "right_shape": [int(dim) for dim in other.projection.shape],
+                "methods": [self.method, other.method],
+            },
+        )
 
 
 def _is_blank(value: Any) -> bool:

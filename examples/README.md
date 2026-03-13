@@ -6,7 +6,7 @@ analysis workflows used in lab studies.
 Sphinx example pages are generated directly from each example file's top module
 docstring via ``scripts/generate_example_docs.py``.
 
-- `basic_usage.py`: end-to-end unified table + Markov + language convergence for one session.
+- `basic_usage.py`: end-to-end unified table + Markov comparison + language convergence for one session.
 - `unified_table_validation.py`: normalize loose transcript rows into validated unified-table records.
 - `sequence_from_table.py`: fit a Markov chain from event-coded session traces.
 - `language_custom_embedder.py`: run convergence analysis with deterministic in-house embeddings.

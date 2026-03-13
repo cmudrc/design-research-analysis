@@ -7,11 +7,12 @@ schema validation, event-sequence transitions, and language convergence.
 ## Technical Implementation
 1. Validate required and recommended unified-table columns.
 2. Fit a first-order Markov chain from event transitions.
-3. Compute semantic convergence using a deterministic custom embedder.
+3. Compare the fitted Markov chain to a small alternate session trace.
+4. Compute semantic convergence using a deterministic custom embedder.
 
 ## Expected Results
-Prints the ordered Markov states, transition matrix, and one convergence label for
-``team-a``.
+Prints the ordered Markov states, transition matrix, one model-comparison summary,
+and one convergence label for ``team-a``.
 
 ## References
 - docs/workflows.rst
@@ -56,6 +57,32 @@ def main() -> None:
     print("Markov states:", markov.states)
     print("Transition matrix:")
     print(markov.transition_matrix)
+
+    alternate_rows = [
+        {
+            "timestamp": "2026-01-01T10:00:00Z",
+            "session_id": "team-b",
+            "actor_id": "alice",
+            "event_type": "propose",
+            "text": "initial concept sketch",
+        },
+        {
+            "timestamp": "2026-01-01T10:01:00Z",
+            "session_id": "team-b",
+            "actor_id": "bob",
+            "event_type": "refine",
+            "text": "refined concept around shared constraints",
+        },
+        {
+            "timestamp": "2026-01-01T10:02:00Z",
+            "session_id": "team-b",
+            "actor_id": "alice",
+            "event_type": "evaluate",
+            "text": "review constraints and compare options",
+        },
+    ]
+    alternate_markov = dran.fit_markov_chain_from_table(alternate_rows, order=1, smoothing=1.0)
+    print("Markov difference:", (markov - alternate_markov).to_dict())
 
     custom_vectors = {
         "initial concept sketch": [3.0, 0.0],

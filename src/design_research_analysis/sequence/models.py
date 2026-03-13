@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections import Counter
 from collections.abc import Callable, Hashable, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -9,6 +10,15 @@ from typing import Any
 
 import numpy as np
 
+from .._comparison import (
+    ComparableResultMixin,
+    ComparisonResult,
+    align_square_matrix_by_labels,
+    align_vector_by_labels,
+    best_assignment,
+    permute_square_matrix,
+    permute_vector,
+)
 from ..table import UnifiedTableConfig, coerce_unified_table, derive_columns, validate_unified_table
 from ._backend import get_hmm_backend
 from .embeddings import embed_text
@@ -129,8 +139,37 @@ def _state_labels(model_result: Any) -> list[str]:
     raise TypeError("Expected MarkovChainResult, GaussianHMMResult, or DiscreteHMMResult.")
 
 
+def _chi_square_statistic(contingency: np.ndarray) -> tuple[float, int]:
+    if contingency.ndim != 2:
+        raise ValueError("Chi-square comparison requires a 2D contingency table.")
+    if contingency.shape[0] < 2 or contingency.shape[1] < 2:
+        return 0.0, 0
+
+    total = float(contingency.sum())
+    if total <= 0.0:
+        return 0.0, 0
+
+    row_sums = contingency.sum(axis=1, keepdims=True)
+    col_sums = contingency.sum(axis=0, keepdims=True)
+    expected = row_sums @ col_sums / total
+    mask = expected > 0.0
+    chi2 = float(np.sum(((contingency - expected) ** 2)[mask] / expected[mask]))
+    dof = int((contingency.shape[0] - 1) * (contingency.shape[1] - 1))
+    return chi2, dof
+
+
+def _chi_square_p_value(statistic: float, dof: int) -> float | None:
+    if dof <= 0:
+        return None
+    try:
+        from scipy.stats import chi2
+    except ImportError:
+        return None
+    return float(chi2.sf(statistic, dof))
+
+
 @dataclass(slots=True)
-class MarkovChainResult:
+class MarkovChainResult(ComparableResultMixin):
     """Serializable result container for an order-k Markov chain."""
 
     order: int
@@ -141,6 +180,11 @@ class MarkovChainResult:
     n_sequences: int
     n_observations: int
     config: dict[str, Any] = field(default_factory=dict)
+    _transition_counts: np.ndarray = field(
+        default_factory=lambda: np.array([[]], dtype=float),
+        repr=False,
+    )
+    _start_counts: np.ndarray = field(default_factory=lambda: np.array([], dtype=float), repr=False)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert the result to a JSON-serializable dictionary."""
@@ -155,9 +199,151 @@ class MarkovChainResult:
             "config": dict(self.config),
         }
 
+    def _comparison_metric(self) -> str:
+        return "transition_profile"
+
+    def _aligned_comparison_payload(self, other: MarkovChainResult) -> dict[str, Any]:
+        if self.order != other.order:
+            raise ValueError("Markov-chain comparison requires the same order on both results.")
+
+        left_labels = _state_labels(self)
+        right_labels = _state_labels(other)
+        labels = sorted(set(left_labels) | set(right_labels))
+
+        left_start = align_vector_by_labels(self.startprob, left_labels, labels)
+        right_start = align_vector_by_labels(other.startprob, right_labels, labels)
+        left_transition = align_square_matrix_by_labels(self.transition_matrix, left_labels, labels)
+        right_transition = align_square_matrix_by_labels(
+            other.transition_matrix, right_labels, labels
+        )
+        left_start_counts = align_vector_by_labels(self._start_counts, left_labels, labels)
+        right_start_counts = align_vector_by_labels(other._start_counts, right_labels, labels)
+        left_transition_counts = align_square_matrix_by_labels(
+            self._transition_counts,
+            left_labels,
+            labels,
+        )
+        right_transition_counts = align_square_matrix_by_labels(
+            other._transition_counts,
+            right_labels,
+            labels,
+        )
+
+        return {
+            "state_labels": labels,
+            "left_start": left_start,
+            "right_start": right_start,
+            "left_transition": left_transition,
+            "right_transition": right_transition,
+            "left_start_counts": left_start_counts,
+            "right_start_counts": right_start_counts,
+            "left_transition_counts": left_transition_counts,
+            "right_transition_counts": right_transition_counts,
+        }
+
+    def _comparison_vectors(
+        self,
+        other: MarkovChainResult,
+    ) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
+        payload = self._aligned_comparison_payload(other)
+        left_vector = np.concatenate(
+            [payload["left_start"], payload["left_transition"].reshape(-1)],
+        )
+        right_vector = np.concatenate(
+            [payload["right_start"], payload["right_transition"].reshape(-1)],
+        )
+        return (
+            left_vector,
+            right_vector,
+            {
+                "state_labels": payload["state_labels"],
+                "startprob_delta": (payload["left_start"] - payload["right_start"])
+                .astype(float)
+                .tolist(),
+                "transition_delta": (payload["left_transition"] - payload["right_transition"])
+                .astype(float)
+                .tolist(),
+            },
+        )
+
+    def _build_comparison(self, other: Any, *, operation: str) -> ComparisonResult:
+        payload = self._aligned_comparison_payload(other)
+        left_transition = payload["left_transition"]
+        right_transition = payload["right_transition"]
+        start_delta = payload["left_start"] - payload["right_start"]
+        transition_delta = left_transition - right_transition
+
+        left_profile_counts = np.concatenate(
+            [payload["left_start_counts"], payload["left_transition_counts"].reshape(-1)],
+        )
+        right_profile_counts = np.concatenate(
+            [payload["right_start_counts"], payload["right_transition_counts"].reshape(-1)],
+        )
+        contingency = np.vstack([left_profile_counts, right_profile_counts])
+        contingency = contingency[:, contingency.sum(axis=0) > 0.0]
+        chi2, dof = _chi_square_statistic(contingency)
+        total = float(contingency.sum())
+        scale = min(contingency.shape[0] - 1, contingency.shape[1] - 1) if contingency.size else 0
+        effect = float(math.sqrt(chi2 / (total * scale))) if total > 0.0 and scale > 0 else 0.0
+        p_value = _chi_square_p_value(chi2, dof)
+        estimate = float(np.linalg.norm(transition_delta))
+        details = {
+            "state_labels": payload["state_labels"],
+            "transition_delta": transition_delta.astype(float).tolist(),
+            "startprob_delta": start_delta.astype(float).tolist(),
+            "degrees_of_freedom": int(dof),
+            "n_profile_cells": int(contingency.shape[1]) if contingency.ndim == 2 else 0,
+        }
+
+        if operation == "difference":
+            if p_value is None:
+                interpretation = (
+                    f"Aligned transition-profile difference has Frobenius norm {estimate:.4g}. "
+                    f"Chi-square statistic is {chi2:.4g} with df={dof}. "
+                    f"Effect size V={effect:.4g}. Install scipy for a p-value."
+                )
+            else:
+                interpretation = (
+                    f"Aligned transition-profile difference has Frobenius norm {estimate:.4g}. "
+                    f"Chi-square statistic is {chi2:.4g} with df={dof} and p={p_value:.4g}. "
+                    f"Effect size V={effect:.4g}."
+                )
+            return ComparisonResult(
+                operation="difference",
+                left_type=type(self).__name__,
+                right_type=type(other).__name__,
+                metric=self._comparison_metric(),
+                estimate=estimate,
+                statistic=float(chi2),
+                p_value=p_value,
+                effect_size=effect,
+                details=details,
+                interpretation=interpretation,
+            )
+
+        if operation == "effect_size":
+            interpretation = (
+                f"Transition-profile effect size is V={effect:.4g}. "
+                "Larger values indicate stronger differences in start or transition structure."
+            )
+            return ComparisonResult(
+                operation="effect_size",
+                left_type=type(self).__name__,
+                right_type=type(other).__name__,
+                metric=self._comparison_metric(),
+                estimate=effect,
+                statistic=float(chi2),
+                p_value=p_value,
+                effect_size=effect,
+                details=details,
+                interpretation=interpretation,
+            )
+
+        raise ValueError(f"Unsupported comparison operation: {operation}")
+
 
 @dataclass(slots=True)
-class GaussianHMMResult:
+class GaussianHMMResult(ComparableResultMixin):
     """Serializable result container for a Gaussian HMM."""
 
     model: Any = field(repr=False)
@@ -189,9 +375,74 @@ class GaussianHMMResult:
             "config": dict(self.config),
         }
 
+    def _comparison_metric(self) -> str:
+        return "hidden_state_profile"
+
+    def _comparison_vectors(
+        self,
+        other: GaussianHMMResult,
+    ) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
+        if self.n_states != other.n_states:
+            raise ValueError("Gaussian-HMM comparison requires the same number of states.")
+        if self.means.shape != other.means.shape:
+            raise ValueError("Gaussian-HMM comparison requires matching mean matrix shapes.")
+        if (
+            np.asarray(self.covars, dtype=float).shape
+            != np.asarray(other.covars, dtype=float).shape
+        ):
+            raise ValueError("Gaussian-HMM comparison requires matching covariance shapes.")
+
+        cost = np.linalg.norm(self.means[:, None, :] - other.means[None, :, :], axis=2)
+        permutation = best_assignment(cost)
+
+        right_start = permute_vector(other.startprob, permutation)
+        right_transition = permute_square_matrix(other.transmat, permutation)
+        right_means = np.asarray(other.means, dtype=float)[list(permutation), ...]
+        right_covars = np.asarray(other.covars, dtype=float)[list(permutation), ...]
+
+        left_vector = np.concatenate(
+            [
+                np.asarray(self.startprob, dtype=float).reshape(-1),
+                np.asarray(self.transmat, dtype=float).reshape(-1),
+                np.asarray(self.means, dtype=float).reshape(-1),
+                np.asarray(self.covars, dtype=float).reshape(-1),
+            ]
+        )
+        right_vector = np.concatenate(
+            [
+                np.asarray(right_start, dtype=float).reshape(-1),
+                np.asarray(right_transition, dtype=float).reshape(-1),
+                np.asarray(right_means, dtype=float).reshape(-1),
+                np.asarray(right_covars, dtype=float).reshape(-1),
+            ]
+        )
+        return (
+            left_vector,
+            right_vector,
+            {
+                "state_permutation": list(permutation),
+                "startprob_delta": (
+                    np.asarray(self.startprob, dtype=float) - np.asarray(right_start, dtype=float)
+                ).tolist(),
+                "transmat_delta": (
+                    np.asarray(self.transmat, dtype=float)
+                    - np.asarray(right_transition, dtype=float)
+                ).tolist(),
+                "means_delta": (
+                    np.asarray(self.means, dtype=float) - np.asarray(right_means, dtype=float)
+                ).tolist(),
+                "covars_delta": (
+                    np.asarray(self.covars, dtype=float) - np.asarray(right_covars, dtype=float)
+                ).tolist(),
+                "train_log_likelihood_delta": float(
+                    self.train_log_likelihood - other.train_log_likelihood
+                ),
+            },
+        )
+
 
 @dataclass(slots=True)
-class DiscreteHMMResult:
+class DiscreteHMMResult(ComparableResultMixin):
     """Serializable result container for a discrete-emission HMM."""
 
     model: Any = field(repr=False)
@@ -222,9 +473,81 @@ class DiscreteHMMResult:
             "config": dict(self.config),
         }
 
+    def _comparison_metric(self) -> str:
+        return "hidden_state_profile"
+
+    def _comparison_vectors(
+        self,
+        other: DiscreteHMMResult,
+    ) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
+        if self.n_states != other.n_states:
+            raise ValueError("Discrete-HMM comparison requires the same number of states.")
+
+        vocab_labels = sorted(
+            {repr(_serialize_token(token)) for token in self.vocab}
+            | {repr(_serialize_token(token)) for token in other.vocab}
+        )
+        left_vocab_labels = [repr(_serialize_token(token)) for token in self.vocab]
+        right_vocab_labels = [repr(_serialize_token(token)) for token in other.vocab]
+        left_emission = np.vstack(
+            [
+                align_vector_by_labels(row, left_vocab_labels, vocab_labels)
+                for row in self.emissionprob
+            ]
+        )
+        right_emission = np.vstack(
+            [
+                align_vector_by_labels(row, right_vocab_labels, vocab_labels)
+                for row in other.emissionprob
+            ]
+        )
+
+        cost = np.linalg.norm(left_emission[:, None, :] - right_emission[None, :, :], axis=2)
+        permutation = best_assignment(cost)
+        right_start = permute_vector(other.startprob, permutation)
+        right_transition = permute_square_matrix(other.transmat, permutation)
+        right_emission_aligned = right_emission[list(permutation), :]
+
+        left_vector = np.concatenate(
+            [
+                np.asarray(self.startprob, dtype=float).reshape(-1),
+                np.asarray(self.transmat, dtype=float).reshape(-1),
+                np.asarray(left_emission, dtype=float).reshape(-1),
+            ]
+        )
+        right_vector = np.concatenate(
+            [
+                np.asarray(right_start, dtype=float).reshape(-1),
+                np.asarray(right_transition, dtype=float).reshape(-1),
+                np.asarray(right_emission_aligned, dtype=float).reshape(-1),
+            ]
+        )
+        return (
+            left_vector,
+            right_vector,
+            {
+                "state_permutation": list(permutation),
+                "aligned_vocab": list(vocab_labels),
+                "startprob_delta": (
+                    np.asarray(self.startprob, dtype=float) - np.asarray(right_start, dtype=float)
+                ).tolist(),
+                "transmat_delta": (
+                    np.asarray(self.transmat, dtype=float)
+                    - np.asarray(right_transition, dtype=float)
+                ).tolist(),
+                "emissionprob_delta": (
+                    np.asarray(left_emission, dtype=float)
+                    - np.asarray(right_emission_aligned, dtype=float)
+                ).tolist(),
+                "train_log_likelihood_delta": float(
+                    self.train_log_likelihood - other.train_log_likelihood
+                ),
+            },
+        )
+
 
 @dataclass(slots=True)
-class DecodeResult:
+class DecodeResult(ComparableResultMixin):
     """Serializable decoded-state output from an HMM."""
 
     algorithm: str
@@ -242,6 +565,35 @@ class DecodeResult:
             "lengths": list(self.lengths) if self.lengths is not None else None,
             "backend": self.backend,
         }
+
+    def _comparison_metric(self) -> str:
+        return "decoded_state_profile"
+
+    def _comparison_vectors(
+        self,
+        other: DecodeResult,
+    ) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
+        left_vector = np.concatenate(
+            [
+                self.states.astype(float).reshape(-1),
+                np.asarray([self.log_probability], dtype=float),
+            ]
+        )
+        right_vector = np.concatenate(
+            [
+                other.states.astype(float).reshape(-1),
+                np.asarray([other.log_probability], dtype=float),
+            ]
+        )
+        return (
+            left_vector,
+            right_vector,
+            {
+                "algorithms": [self.algorithm, other.algorithm],
+                "backends": [self.backend, other.backend],
+                "lengths": [self.lengths, other.lengths],
+            },
+        )
 
 
 def fit_markov_chain(
@@ -301,6 +653,13 @@ def fit_markov_chain(
     state_to_index = {state: idx for idx, state in enumerate(ordered_states)}
     n_states = len(ordered_states)
 
+    transition_count_matrix = np.zeros((n_states, n_states), dtype=float)
+    for src, counts in transition_counts.items():
+        src_idx = state_to_index[src]
+        for dst, count in counts.items():
+            dst_idx = state_to_index[dst]
+            transition_count_matrix[src_idx, dst_idx] = float(count)
+
     transition = np.full((n_states, n_states), smoothing, dtype=float)
     for src, counts in transition_counts.items():
         src_idx = state_to_index[src]
@@ -314,6 +673,10 @@ def fit_markov_chain(
             transition[row_idx] = 1.0 / n_states
         else:
             transition[row_idx] /= row_sum
+
+    start_counts_vector = np.zeros(n_states, dtype=float)
+    for state, count in start_counts.items():
+        start_counts_vector[state_to_index[state]] = float(count)
 
     startprob = np.full(n_states, smoothing, dtype=float)
     for state, count in start_counts.items():
@@ -333,6 +696,8 @@ def fit_markov_chain(
         n_sequences=len(sequences),
         n_observations=int(sum(len(seq) for seq in sequences)),
         config={"order": order, "smoothing": smoothing},
+        _transition_counts=transition_count_matrix,
+        _start_counts=start_counts_vector,
     )
 
 

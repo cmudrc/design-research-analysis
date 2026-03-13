@@ -6,6 +6,7 @@ This page documents the supported top-level public API from
 
 Top-level groups:
 
+- Comparison: ``ComparisonResult``
 - Module facades: ``dataset``, ``dimred``, ``language``, ``runtime``, ``sequence``, ``stats``
 - Unified table contracts: ``UnifiedTableConfig``, ``UnifiedTableValidationReport``,
   ``coerce_unified_table``, ``derive_columns``, ``validate_unified_table``
@@ -23,6 +24,10 @@ Top-level groups:
 - Dataset + runtime: ``profile_dataframe``, ``validate_dataframe``, ``generate_codebook``,
   ``capture_run_context``, ``attach_provenance``, ``is_notebook``,
   ``is_google_colab``, ``write_run_manifest``
+
+Typed analysis result objects also support standardized comparison helpers:
+``difference(other)`` and ``effect(other)``, plus operator shorthands
+``left - right`` and ``left / right``.
 
 .. automodule:: design_research_analysis
    :members:

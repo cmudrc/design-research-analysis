@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
+from ._comparison import ComparableResultMixin
 from .table import coerce_unified_table
 
 if TYPE_CHECKING:
@@ -28,7 +29,7 @@ _SUPPORTED_ALTERNATIVES = {"two-sided", "larger", "smaller"}
 
 
 @dataclass(slots=True)
-class GroupComparisonResult:
+class GroupComparisonResult(ComparableResultMixin):
     """Result container for group-comparison analyses."""
 
     method: str
@@ -51,9 +52,52 @@ class GroupComparisonResult:
             "config": dict(self.config),
         }
 
+    def _comparison_metric(self) -> str:
+        return "group_summary"
+
+    def _comparison_vectors(
+        self,
+        other: GroupComparisonResult,
+    ) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
+        labels = sorted(set(self.group_means) | set(other.group_means))
+        left_means = np.asarray(
+            [self.group_means.get(label, 0.0) for label in labels],
+            dtype=float,
+        )
+        right_means = np.asarray(
+            [other.group_means.get(label, 0.0) for label in labels],
+            dtype=float,
+        )
+        left_sizes = np.asarray(
+            [self.group_sizes.get(label, 0) for label in labels],
+            dtype=float,
+        )
+        right_sizes = np.asarray(
+            [other.group_sizes.get(label, 0) for label in labels],
+            dtype=float,
+        )
+        left_vector = np.concatenate(
+            [left_means, left_sizes, np.asarray([self.statistic, self.effect_size], dtype=float)]
+        )
+        right_vector = np.concatenate(
+            [
+                right_means,
+                right_sizes,
+                np.asarray([other.statistic, other.effect_size], dtype=float),
+            ]
+        )
+        return (
+            left_vector,
+            right_vector,
+            {
+                "group_labels": labels,
+                "methods": [self.method, other.method],
+            },
+        )
+
 
 @dataclass(slots=True)
-class RegressionResult:
+class RegressionResult(ComparableResultMixin):
     """Result container for ordinary least squares regression."""
 
     coefficients: dict[str, float]
@@ -76,9 +120,41 @@ class RegressionResult:
             "config": dict(self.config),
         }
 
+    def _comparison_metric(self) -> str:
+        return "regression_profile"
+
+    def _comparison_vectors(
+        self,
+        other: RegressionResult,
+    ) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
+        names = sorted(set(self.coefficients) | set(other.coefficients))
+        left_coeffs = np.asarray(
+            [self.coefficients.get(name, 0.0) for name in names],
+            dtype=float,
+        )
+        right_coeffs = np.asarray(
+            [other.coefficients.get(name, 0.0) for name in names],
+            dtype=float,
+        )
+        left_vector = np.concatenate(
+            [
+                np.asarray([self.intercept], dtype=float),
+                left_coeffs,
+                np.asarray([self.r2, self.mse]),
+            ]
+        )
+        right_vector = np.concatenate(
+            [
+                np.asarray([other.intercept], dtype=float),
+                right_coeffs,
+                np.asarray([other.r2, other.mse]),
+            ]
+        )
+        return left_vector, right_vector, {"feature_names": names}
+
 
 @dataclass(slots=True)
-class MixedEffectsResult:
+class MixedEffectsResult(ComparableResultMixin):
     """Result container for mixed-effects model fitting."""
 
     success: bool
@@ -106,6 +182,44 @@ class MixedEffectsResult:
             "message": self.message,
             "config": dict(self.config),
         }
+
+    def _comparison_metric(self) -> str:
+        return "mixed_effects_profile"
+
+    def _comparison_vectors(
+        self,
+        other: MixedEffectsResult,
+    ) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
+        names = sorted(set(self.params) | set(other.params))
+        left_params = np.asarray([self.params.get(name, 0.0) for name in names], dtype=float)
+        right_params = np.asarray([other.params.get(name, 0.0) for name in names], dtype=float)
+        left_tail = np.asarray(
+            [
+                float(self.success),
+                0.0 if self.aic is None else self.aic,
+                0.0 if self.bic is None else self.bic,
+                0.0 if self.log_likelihood is None else self.log_likelihood,
+            ],
+            dtype=float,
+        )
+        right_tail = np.asarray(
+            [
+                float(other.success),
+                0.0 if other.aic is None else other.aic,
+                0.0 if other.bic is None else other.bic,
+                0.0 if other.log_likelihood is None else other.log_likelihood,
+            ],
+            dtype=float,
+        )
+        return (
+            np.concatenate([left_params, left_tail]),
+            np.concatenate([right_params, right_tail]),
+            {
+                "formulae": [self.formula, other.formula],
+                "group_columns": [self.group_column, other.group_column],
+                "parameter_names": names,
+            },
+        )
 
 
 def _is_blank(value: Any) -> bool:

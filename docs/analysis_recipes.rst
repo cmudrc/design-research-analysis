@@ -11,6 +11,21 @@ Sequence Recipe
    result = fit_markov_chain_from_table(rows, order=1, smoothing=1.0)
    print(result.transition_matrix)
 
+Model Comparison Recipe
+-----------------------
+
+.. code-block:: python
+
+   from design_research_analysis import fit_markov_chain_from_table
+
+   baseline = fit_markov_chain_from_table(rows_a, order=1, smoothing=1.0)
+   variant = fit_markov_chain_from_table(rows_b, order=1, smoothing=1.0)
+
+   difference = baseline - variant
+   effect = baseline / variant
+   print(difference.to_dict())
+   print(effect.effect_size)
+
 Language Recipe (Custom Embedder)
 ---------------------------------
 

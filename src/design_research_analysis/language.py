@@ -9,6 +9,7 @@ from typing import Any, TypeGuard
 
 import numpy as np
 
+from ._comparison import ComparableResultMixin
 from .sequence.embeddings import embed_text
 from .table import coerce_unified_table, derive_columns
 
@@ -67,7 +68,7 @@ _NEGATIVE_WORDS = {
 
 
 @dataclass(slots=True)
-class LanguageConvergenceResult:
+class LanguageConvergenceResult(ComparableResultMixin):
     """Result container for language convergence/divergence analysis."""
 
     groups: list[str]
@@ -89,6 +90,35 @@ class LanguageConvergenceResult:
             "n_observations": int(self.n_observations),
             "config": dict(self.config),
         }
+
+    def _comparison_metric(self) -> str:
+        return "convergence_profile"
+
+    def _comparison_vectors(
+        self,
+        other: LanguageConvergenceResult,
+    ) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
+        groups = sorted(set(self.slope_by_group) | set(other.slope_by_group))
+        left_slopes = np.asarray(
+            [self.slope_by_group.get(group, 0.0) for group in groups], dtype=float
+        )
+        right_slopes = np.asarray(
+            [other.slope_by_group.get(group, 0.0) for group in groups],
+            dtype=float,
+        )
+        left_lengths = np.asarray(
+            [len(self.distance_trajectories.get(group, [])) for group in groups],
+            dtype=float,
+        )
+        right_lengths = np.asarray(
+            [len(other.distance_trajectories.get(group, [])) for group in groups],
+            dtype=float,
+        )
+        return (
+            np.concatenate([left_slopes, left_lengths]),
+            np.concatenate([right_slopes, right_lengths]),
+            {"groups": groups, "window_sizes": [self.window_size, other.window_size]},
+        )
 
 
 def _is_blank(value: Any) -> bool:

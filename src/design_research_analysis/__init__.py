@@ -1,6 +1,7 @@
 """Curated public exports for design-research-analysis."""
 
 from . import dataset, dimred, language, runtime, sequence, stats
+from ._comparison import ComparisonResult
 from .dataset import generate_codebook, profile_dataframe, validate_dataframe
 from .dimred import cluster_projection, embed_records, reduce_dimensions
 from .language import (
@@ -48,6 +49,7 @@ from .table import (
 )
 
 __all__ = [
+    "ComparisonResult",
     "DecodeResult",
     "DiscreteHMMResult",
     "GaussianHMMResult",
