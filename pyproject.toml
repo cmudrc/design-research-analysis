@@ -52,8 +52,10 @@ embeddings = ["sentence-transformers>=3.0,<4"]
 lang = [
   "scikit-learn>=1.5,<2",
 ]
-dimred = [
+maps = [
+  "pacmap>=0.8,<1",
   "scikit-learn>=1.5,<2",
+  "trimap>=1.1,<2",
   "umap-learn>=0.5.7,<1",
 ]
 stats = [
@@ -66,7 +68,9 @@ all = [
   "networkx>=3.3,<4",
   "scipy>=1.11,<2",
   "sentence-transformers>=3.0,<4",
+  "pacmap>=0.8,<1",
   "scikit-learn>=1.5,<2",
+  "trimap>=1.1,<2",
   "umap-learn>=0.5.7,<1",
   "statsmodels>=0.14,<1",
   "pandas>=2.2,<3",
@@ -134,12 +138,16 @@ module = [
   "matplotlib.*",
   "networkx",
   "networkx.*",
+  "pacmap",
+  "pacmap.*",
   "scipy",
   "scipy.*",
   "sentence_transformers",
   "sentence_transformers.*",
   "sklearn",
   "sklearn.*",
+  "trimap",
+  "trimap.*",
   "umap",
   "umap.*",
   "pandas",

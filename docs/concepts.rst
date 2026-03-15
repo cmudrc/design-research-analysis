@@ -26,7 +26,7 @@ Analysis Families
 
 - sequence: transition and temporal-structure questions
 - language: semantic convergence and discourse questions
-- dimred: embedding structure and visualization questions
+- embedding maps: embedding structure, trajectories, and scalar-overlay questions
 - stats: inferential and effect-size questions
 
 Artifacts and Summaries

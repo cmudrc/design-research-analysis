@@ -36,14 +36,14 @@ Run language-convergence workflows with custom embedding logic.
 **Runtime:** medium
 **Teaches:** semantic trajectory analysis, embedder integration, text-study interpretation
 
-Dimred PCA
-~~~~~~~~~~
+Embedding Maps Trajectories
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Project and cluster embeddings for structure inspection.
+Plot trajectories and scalar values across embedding maps.
 
-**Requires:** ``dimred``
+**Requires:** ``maps`` for full multi-method comparison
 **Runtime:** short
-**Teaches:** projection choices, clustering interpretation, geometry-aware summaries
+**Teaches:** trajectory overlays, value coloring, and embedding-map comparison
 
 Stats Regression
 ~~~~~~~~~~~~~~~~
@@ -61,7 +61,7 @@ Full Catalog
    :maxdepth: 1
 
    basic_usage
-   dimred_pca
+   embedding_maps_trajectories
    lab_study_pipeline
    language_custom_embedder
    sequence_from_table

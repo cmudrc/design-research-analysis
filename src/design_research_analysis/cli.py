@@ -8,12 +8,18 @@ import importlib
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 
 from .dataset import generate_codebook, profile_dataframe, validate_dataframe
-from .dimred import cluster_projection, embed_records, reduce_dimensions
+from .embedding_maps import (
+    cluster_embedding_map,
+    compare_embedding_maps,
+    embed_records,
+    plot_embedding_map,
+    plot_embedding_map_grid,
+)
 from .language import compute_language_convergence, fit_topic_model, score_sentiment
 from .runtime import capture_run_context, write_run_manifest
 from .sequence import (
@@ -44,6 +50,55 @@ def _load_table(path: str) -> list[dict[str, Any]]:
             reader = csv.DictReader(handle, delimiter=delimiter)
             return coerce_unified_table(list(reader))
     raise ValueError("Unsupported input format. Use .csv, .tsv, or .json.")
+
+
+def _is_blank(value: Any) -> bool:
+    return value is None or (isinstance(value, str) and value.strip() == "")
+
+
+def _parse_name_list(raw_value: str) -> list[str]:
+    return [item.strip() for item in raw_value.split(",") if item.strip()]
+
+
+def _extract_record_ids(
+    rows: list[dict[str, Any]],
+    *,
+    record_id_column: str,
+) -> list[str]:
+    record_ids: list[str] = []
+    for index, row in enumerate(rows):
+        record_id = row.get(record_id_column)
+        if _is_blank(record_id):
+            record_id = str(index)
+        record_ids.append(str(record_id))
+    if len(set(record_ids)) != len(record_ids):
+        raise ValueError(f"'{record_id_column}' values must be unique.")
+    return record_ids
+
+
+def _feature_matrix_from_rows(
+    rows: list[dict[str, Any]],
+    *,
+    feature_columns: list[str],
+    record_id_column: str,
+) -> tuple[np.ndarray, list[str]]:
+    if not feature_columns:
+        raise ValueError("feature_columns must contain at least one column.")
+
+    record_ids = _extract_record_ids(rows, record_id_column=record_id_column)
+    matrix_rows: list[list[float]] = []
+    for index, row in enumerate(rows):
+        vector: list[float] = []
+        for column in feature_columns:
+            raw_value = row.get(column)
+            if _is_blank(raw_value):
+                raise ValueError(f"Row {index} is missing '{column}'.")
+            try:
+                vector.append(float(cast(float | int | str, raw_value)))
+            except (TypeError, ValueError) as exc:
+                raise ValueError(f"Row {index} has non-numeric '{column}'.") from exc
+        matrix_rows.append(vector)
+    return np.asarray(matrix_rows, dtype=float), record_ids
 
 
 def _serialize_for_json(value: Any) -> Any:
@@ -228,47 +283,121 @@ def _cmd_run_language(args: argparse.Namespace) -> int:
     return 0
 
 
-def _cmd_run_dimred(args: argparse.Namespace) -> int:
+def _cmd_run_embedding_maps(args: argparse.Namespace) -> int:
     rows = _load_table(args.input)
-    embeddings = embed_records(
-        rows,
-        text_column=args.text_column,
-        record_id_column=args.record_id_column,
-    )
-    projection = reduce_dimensions(
-        embeddings.embeddings,
-        method=args.method,
+    methods = args.method or ["pca"]
+
+    source_payload: dict[str, Any]
+    embeddings_matrix: np.ndarray
+    record_ids: list[str]
+    embedding_payload: dict[str, Any] | None = None
+
+    if args.feature_columns:
+        feature_columns = _parse_name_list(args.feature_columns)
+        embeddings_matrix, record_ids = _feature_matrix_from_rows(
+            rows,
+            feature_columns=feature_columns,
+            record_id_column=args.record_id_column,
+        )
+        source_payload = {
+            "mode": "features",
+            "record_id_column": args.record_id_column,
+            "feature_columns": feature_columns,
+        }
+    else:
+        embeddings = embed_records(
+            rows,
+            text_column=args.text_column,
+            record_id_column=args.record_id_column,
+        )
+        embeddings_matrix = embeddings.embeddings
+        record_ids = embeddings.record_ids
+        embedding_payload = embeddings.to_dict()
+        source_payload = {
+            "mode": "text",
+            "record_id_column": args.record_id_column,
+            "text_column": args.text_column,
+        }
+
+    maps = compare_embedding_maps(
+        embeddings_matrix,
+        methods=methods,
         n_components=args.n_components,
+        record_ids=record_ids,
         random_state=args.seed,
         perplexity=args.perplexity,
         n_neighbors=args.n_neighbors,
         min_dist=args.min_dist,
     )
-    clustering = cluster_projection(
-        projection.projection,
-        method=args.cluster_method,
-        n_clusters=args.n_clusters,
-        random_state=args.seed,
-    )
+    clustering = {
+        method_name: cluster_embedding_map(
+            embedding_map,
+            method=args.cluster_method,
+            n_clusters=args.n_clusters,
+            random_state=args.seed,
+        )
+        for method_name, embedding_map in maps.items()
+    }
 
-    projection_rows: list[dict[str, Any]] = []
-    for idx, record_id in enumerate(embeddings.record_ids):
-        row: dict[str, Any] = {"record_id": record_id}
-        for component in range(projection.projection.shape[1]):
-            row[f"component_{component + 1}"] = float(projection.projection[idx, component])
-        row["cluster_label"] = int(clustering["labels"][idx])
-        projection_rows.append(row)
+    map_rows: list[dict[str, Any]] = []
+    for method_name, embedding_map in maps.items():
+        labels = clustering[method_name]["labels"]
+        for index, record_id in enumerate(embedding_map.record_ids):
+            row: dict[str, Any] = {
+                "record_id": record_id,
+                "method": method_name,
+            }
+            for component in range(embedding_map.coordinates.shape[1]):
+                row[f"component_{component + 1}"] = float(
+                    embedding_map.coordinates[index, component]
+                )
+            if index < len(labels):
+                row["cluster_label"] = int(labels[index])
+            map_rows.append(row)
 
-    _write_json(
-        args.summary_json,
-        {
-            **_base_payload(analysis="dimred", mode=args.method),
-            "embedding": embeddings.to_dict(),
-            "projection": projection.to_dict(),
-            "clustering": clustering,
+    if args.map_csv:
+        _write_csv(args.map_csv, map_rows)
+
+    if args.map_png:
+        first_method, first_map = next(iter(maps.items()))
+        figure, _ = plot_embedding_map(
+            first_map,
+            rows,
+            record_id_column=args.record_id_column,
+            trace_column=args.trace_column,
+            order_column=args.order_column,
+            value_column=args.value_column,
+            title=first_method,
+        )
+        figure.savefig(args.map_png, dpi=150, bbox_inches="tight")
+        figure.clf()
+
+    if args.comparison_png:
+        figure, _ = plot_embedding_map_grid(
+            maps,
+            rows,
+            record_id_column=args.record_id_column,
+            trace_column=args.trace_column,
+            order_column=args.order_column,
+            value_column=args.value_column,
+        )
+        figure.savefig(args.comparison_png, dpi=150, bbox_inches="tight")
+        figure.clf()
+
+    payload: dict[str, Any] = {
+        **_base_payload(
+            analysis="embedding_maps",
+            mode=methods[0] if len(methods) == 1 else "multi-method",
+        ),
+        "source": source_payload,
+        "maps": {
+            method_name: embedding_map.to_dict() for method_name, embedding_map in maps.items()
         },
-    )
-    _write_csv(args.projection_csv, projection_rows)
+        "clustering": clustering,
+    }
+    if embedding_payload is not None:
+        payload["embedding"] = embedding_payload
+    _write_json(args.summary_json, payload)
     return 0
 
 
@@ -549,28 +678,38 @@ def _build_parser() -> argparse.ArgumentParser:
     language_parser.add_argument("--n-topics", type=int, default=5)
     language_parser.set_defaults(func=_cmd_run_language)
 
-    dimred_parser = subparsers.add_parser(
-        "run-dimred",
-        help="Run embedding and dim-red analyses.",
+    maps_parser = subparsers.add_parser(
+        "run-embedding-maps",
+        help="Run embedding-map analyses.",
     )
-    dimred_parser.add_argument("--input", required=True)
-    dimred_parser.add_argument("--summary-json", required=True)
-    dimred_parser.add_argument("--projection-csv", required=True)
-    dimred_parser.add_argument("--text-column", default="text")
-    dimred_parser.add_argument("--record-id-column", default="record_id")
-    dimred_parser.add_argument("--method", choices=["pca", "tsne", "umap"], default="pca")
-    dimred_parser.add_argument("--n-components", type=int, default=2)
-    dimred_parser.add_argument("--seed", type=int, default=0)
-    dimred_parser.add_argument("--perplexity", type=float, default=30.0)
-    dimred_parser.add_argument("--n-neighbors", type=int, default=15)
-    dimred_parser.add_argument("--min-dist", type=float, default=0.1)
-    dimred_parser.add_argument(
+    maps_parser.add_argument("--input", required=True)
+    maps_parser.add_argument("--summary-json", required=True)
+    maps_parser.add_argument("--map-csv")
+    maps_parser.add_argument("--map-png")
+    maps_parser.add_argument("--comparison-png")
+    maps_parser.add_argument("--text-column", default="text")
+    maps_parser.add_argument("--feature-columns", default="")
+    maps_parser.add_argument("--record-id-column", default="record_id")
+    maps_parser.add_argument(
+        "--method",
+        action="append",
+        choices=["pca", "tsne", "umap", "pacmap", "trimap"],
+    )
+    maps_parser.add_argument("--n-components", type=int, default=2)
+    maps_parser.add_argument("--seed", type=int, default=0)
+    maps_parser.add_argument("--perplexity", type=float, default=30.0)
+    maps_parser.add_argument("--n-neighbors", type=int, default=15)
+    maps_parser.add_argument("--min-dist", type=float, default=0.1)
+    maps_parser.add_argument("--trace-column")
+    maps_parser.add_argument("--order-column")
+    maps_parser.add_argument("--value-column")
+    maps_parser.add_argument(
         "--cluster-method",
         choices=["kmeans", "agglomerative"],
         default="kmeans",
     )
-    dimred_parser.add_argument("--n-clusters", type=int, default=3)
-    dimred_parser.set_defaults(func=_cmd_run_dimred)
+    maps_parser.add_argument("--n-clusters", type=int, default=3)
+    maps_parser.set_defaults(func=_cmd_run_embedding_maps)
 
     sequence_parser = subparsers.add_parser("run-sequence", help="Run sequence-model analyses.")
     sequence_parser.add_argument("--input", required=True)

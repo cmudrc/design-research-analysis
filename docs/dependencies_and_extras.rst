@@ -41,8 +41,8 @@ Extras Matrix
      - Sentence embedding backends
    * - ``lang``
      - Language/topic modeling workflows
-   * - ``dimred``
-     - Projection and manifold workflows
+   * - ``maps``
+     - Embedding-map projection, manifold, and plotting workflows
    * - ``stats``
      - Inferential and model-based statistics
    * - ``all``
@@ -51,14 +51,16 @@ Extras Matrix
      - Contributor tooling
 
 ``seq`` is usually the first add-on for event-transition studies. ``lang`` and
-``embeddings`` are most useful for discourse and semantic analyses. ``stats`` is
-best when inferential modeling is central. ``all`` is appropriate when building
-a full local research environment.
+``embeddings`` are most useful for discourse and semantic analyses. ``maps`` is
+best when structural embedding comparisons or trajectory overlays are central.
+``stats`` is best when inferential modeling is central. ``all`` is appropriate
+when building a full local research environment.
 
 Recommended install profiles:
 
 - sequence-focused studies: ``pip install -e ".[seq]"``
 - language + embedding studies: ``pip install -e ".[lang,embeddings]"``
+- embedding-map studies: ``pip install -e ".[maps]"``
 - inference-heavy studies: ``pip install -e ".[stats,data]"``
 - broad analysis workstation setup: ``pip install -e ".[all]"``
 

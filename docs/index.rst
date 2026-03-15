@@ -7,7 +7,7 @@ What This Library Does
 ----------------------
 
 ``design-research-analysis`` supports sequence analysis, language analysis,
-dimensionality reduction, and statistical modeling over unified event-table
+embedding maps, and statistical modeling over unified event-table
 inputs. It is intended for recurring research workflows where validation,
 provenance, and repeatability are first-order concerns.
 
@@ -17,7 +17,7 @@ Highlights
 - Unified table schema
 - Sequence modeling
 - Language analysis
-- Embeddings and dimred
+- Embeddings and embedding maps
 - Statistical workflows
 - Provenance capture
 
