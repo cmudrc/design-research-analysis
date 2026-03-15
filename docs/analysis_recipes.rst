@@ -46,13 +46,13 @@ Language Recipe (Custom Embedder)
    )
    print(convergence.direction_by_group)
 
-Dimensionality Reduction Recipe
--------------------------------
+Embedding Maps Recipe
+---------------------
 
 .. code-block:: python
 
    import numpy as np
-   from design_research_analysis import cluster_projection, reduce_dimensions
+   from design_research_analysis import build_embedding_map, cluster_embedding_map
 
    vectors = np.asarray(
        [
@@ -62,8 +62,8 @@ Dimensionality Reduction Recipe
            [0.1, 0.9, 0.3],
        ]
    )
-   projection = reduce_dimensions(vectors, method="pca", n_components=2)
-   clusters = cluster_projection(projection.projection, n_clusters=2)
+   embedding_map = build_embedding_map(vectors, method="pca", n_components=2)
+   clusters = cluster_embedding_map(embedding_map, n_clusters=2)
    print(clusters["labels"])
 
 Statistics Recipe

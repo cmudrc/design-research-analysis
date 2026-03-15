@@ -68,6 +68,26 @@ class _FakeResult:
         return dict(self._payload)
 
 
+class _FakeMapResult:
+    def __init__(
+        self,
+        *,
+        method: str,
+        record_ids: list[str],
+        coordinates: np.ndarray,
+    ) -> None:
+        self.method = method
+        self.record_ids = record_ids
+        self.coordinates = coordinates
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "method": self.method,
+            "record_ids": list(self.record_ids),
+            "shape": [int(dim) for dim in self.coordinates.shape],
+        }
+
+
 class _FakeConvergence:
     def __init__(self) -> None:
         self.distance_trajectories = {"s1": [0.3, 0.1], "s2": [0.2]}
@@ -266,13 +286,15 @@ def test_cli_run_language_topic_error_and_trajectory_output(
     assert trajectory_csv.read_text(encoding="utf-8").startswith("group,step,semantic_distance")
 
 
-def test_cli_run_dimred_with_stubbed_backends(
+def test_cli_run_embedding_maps_with_text_source_and_png_outputs(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     input_csv = tmp_path / "input.csv"
-    summary_json = tmp_path / "dimred.json"
-    projection_csv = tmp_path / "projection.csv"
+    summary_json = tmp_path / "maps.json"
+    map_csv = tmp_path / "maps.csv"
+    map_png = tmp_path / "map.png"
+    comparison_png = tmp_path / "comparison.png"
     _write_fixture_csv(input_csv)
 
     fake_embeddings = SimpleNamespace(
@@ -280,34 +302,146 @@ def test_cli_run_dimred_with_stubbed_backends(
         record_ids=["r1", "r2", "r3"],
         to_dict=lambda: {"shape": [3, 2]},
     )
-    fake_projection = SimpleNamespace(
-        projection=np.asarray([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]]),
-        to_dict=lambda: {"shape": [3, 2]},
+    fake_map = _FakeMapResult(
+        method="pca",
+        record_ids=["r1", "r2", "r3"],
+        coordinates=np.asarray([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]]),
     )
+    single_figure = _FakeFigure()
+    grid_figure = _FakeFigure()
     monkeypatch.setattr(cli_module, "embed_records", lambda *args, **kwargs: fake_embeddings)
-    monkeypatch.setattr(cli_module, "reduce_dimensions", lambda *args, **kwargs: fake_projection)
     monkeypatch.setattr(
         cli_module,
-        "cluster_projection",
+        "compare_embedding_maps",
+        lambda *args, **kwargs: {"pca": fake_map},
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "cluster_embedding_map",
         lambda *args, **kwargs: {"labels": [0, 1, 0], "method": "kmeans"},
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "plot_embedding_map",
+        lambda *args, **kwargs: (single_figure, object()),
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "plot_embedding_map_grid",
+        lambda *args, **kwargs: (grid_figure, [object()]),
     )
 
     exit_code = main(
         [
-            "run-dimred",
+            "run-embedding-maps",
             "--input",
             str(input_csv),
             "--summary-json",
             str(summary_json),
-            "--projection-csv",
-            str(projection_csv),
+            "--map-csv",
+            str(map_csv),
+            "--map-png",
+            str(map_png),
+            "--comparison-png",
+            str(comparison_png),
+            "--trace-column",
+            "session_id",
+            "--order-column",
+            "timestamp",
+            "--value-column",
+            "value",
         ]
     )
 
     assert exit_code == 0
     payload = json.loads(summary_json.read_text(encoding="utf-8"))
-    _assert_envelope(payload, analysis="dimred", mode="pca")
-    assert projection_csv.exists()
+    _assert_envelope(payload, analysis="embedding_maps", mode="pca")
+    assert payload["maps"]["pca"]["shape"] == [3, 2]
+    assert map_csv.exists()
+    assert single_figure.saved == [str(map_png)]
+    assert grid_figure.saved == [str(comparison_png)]
+
+
+def test_cli_run_embedding_maps_feature_mode_with_multiple_methods(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    input_csv = tmp_path / "input.csv"
+    summary_json = tmp_path / "maps.json"
+    map_csv = tmp_path / "maps.csv"
+    _write_fixture_csv(input_csv)
+
+    fake_pca = _FakeMapResult(
+        method="pca",
+        record_ids=["r1", "r2", "r3"],
+        coordinates=np.asarray([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]]),
+    )
+    fake_trimap = _FakeMapResult(
+        method="trimap",
+        record_ids=["r1", "r2", "r3"],
+        coordinates=np.asarray([[1.1, 1.2], [1.3, 1.4], [1.5, 1.6]]),
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "embed_records",
+        lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("embed_records not expected")),
+    )
+
+    captured: dict[str, Any] = {}
+
+    def _fake_compare(
+        matrix: np.ndarray,
+        *,
+        methods: list[str],
+        record_ids: list[str],
+        **_: object,
+    ) -> dict[str, _FakeMapResult]:
+        captured["shape"] = matrix.shape
+        captured["methods"] = methods
+        captured["record_ids"] = record_ids
+        return {"pca": fake_pca, "trimap": fake_trimap}
+
+    monkeypatch.setattr(cli_module, "compare_embedding_maps", _fake_compare)
+    monkeypatch.setattr(
+        cli_module,
+        "cluster_embedding_map",
+        lambda embedding_map, **kwargs: {
+            "labels": [0, 1, 0] if embedding_map.method == "pca" else [1, 1, 0],
+            "method": kwargs["method"],
+        },
+    )
+
+    exit_code = main(
+        [
+            "run-embedding-maps",
+            "--input",
+            str(input_csv),
+            "--summary-json",
+            str(summary_json),
+            "--map-csv",
+            str(map_csv),
+            "--feature-columns",
+            "x1,x2",
+            "--method",
+            "pca",
+            "--method",
+            "trimap",
+        ]
+    )
+
+    assert exit_code == 0
+    payload = json.loads(summary_json.read_text(encoding="utf-8"))
+    _assert_envelope(payload, analysis="embedding_maps", mode="multi-method")
+    assert payload["source"]["mode"] == "features"
+    assert captured == {
+        "shape": (3, 2),
+        "methods": ["pca", "trimap"],
+        "record_ids": ["r1", "r2", "r3"],
+    }
+
+    rows = list(csv.DictReader(map_csv.open("r", encoding="utf-8")))
+    assert {row["method"] for row in rows} == {"pca", "trimap"}
+    assert rows[0]["record_id"] == "r1"
 
 
 def test_cli_run_sequence_discrete_and_text_modes_with_matrix_output(

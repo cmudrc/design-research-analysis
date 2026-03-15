@@ -193,8 +193,8 @@ def main() -> None:
         ],
         dtype=float,
     )
-    projection = dran.reduce_dimensions(vectors, method="pca", n_components=2)
-    clusters = dran.cluster_projection(projection.projection, method="kmeans", n_clusters=2)
+    embedding_map = dran.build_embedding_map(vectors, method="pca", n_components=2)
+    clusters = dran.cluster_embedding_map(embedding_map, method="kmeans", n_clusters=2)
 
     context = dran.capture_run_context(seed=11)
     manifest_path = Path("artifacts/runtime/lab_study_manifest.json")

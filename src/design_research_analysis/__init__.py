@@ -1,9 +1,18 @@
 """Curated public exports for design-research-analysis."""
 
-from . import dataset, dimred, language, runtime, sequence, stats
+from . import dataset, embedding_maps, language, runtime, sequence, stats
 from ._comparison import ComparisonResult
 from .dataset import generate_codebook, profile_dataframe, validate_dataframe
-from .dimred import cluster_projection, embed_records, reduce_dimensions
+from .embedding_maps import (
+    EmbeddingMapResult,
+    EmbeddingResult,
+    build_embedding_map,
+    cluster_embedding_map,
+    compare_embedding_maps,
+    embed_records,
+    plot_embedding_map,
+    plot_embedding_map_grid,
+)
 from .language import (
     compute_language_convergence,
     compute_semantic_distance_trajectory,
@@ -52,23 +61,27 @@ __all__ = [
     "ComparisonResult",
     "DecodeResult",
     "DiscreteHMMResult",
+    "EmbeddingMapResult",
+    "EmbeddingResult",
     "GaussianHMMResult",
     "MarkovChainResult",
     "UnifiedTableConfig",
     "UnifiedTableValidationReport",
     "attach_provenance",
     "bootstrap_ci",
+    "build_embedding_map",
     "capture_run_context",
-    "cluster_projection",
+    "cluster_embedding_map",
     "coerce_unified_table",
+    "compare_embedding_maps",
     "compare_groups",
     "compute_language_convergence",
     "compute_semantic_distance_trajectory",
     "dataset",
     "decode_hmm",
     "derive_columns",
-    "dimred",
     "embed_records",
+    "embedding_maps",
     "estimate_sample_size",
     "fit_discrete_hmm_from_table",
     "fit_markov_chain_from_table",
@@ -82,12 +95,13 @@ __all__ = [
     "language",
     "minimum_detectable_effect",
     "permutation_test",
+    "plot_embedding_map",
+    "plot_embedding_map_grid",
     "plot_state_graph",
     "plot_transition_matrix",
     "power_curve",
     "profile_dataframe",
     "rank_tests_one_stop",
-    "reduce_dimensions",
     "runtime",
     "score_sentiment",
     "sequence",
