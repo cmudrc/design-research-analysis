@@ -23,7 +23,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--minimum",
         type=float,
-        default=80.0,
+        default=90.0,
         help="Minimum total coverage percentage.",
     )
     return parser.parse_args()

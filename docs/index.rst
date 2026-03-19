@@ -1,38 +1,59 @@
 design-research-analysis
 ========================
 
-Reusable analysis workflows for design-research event data.
-
-What This Library Does
-----------------------
+The analysis layer for reproducible design-research event data.
 
 ``design-research-analysis`` supports sequence analysis, language analysis,
 dimensionality reduction, and statistical modeling over unified event-table
-inputs. It is intended for recurring research workflows where validation,
+inputs. It is built for recurring research workflows where validation,
 provenance, and repeatability are first-order concerns.
 
-Highlights
-----------
+Unified-table validation and column derivation are core features, not
+pre-processing footnotes. They make downstream analyses composable,
+reproducible, and easier to compare across studies.
 
-- Unified table schema
-- Sequence modeling
-- Language analysis
-- Embeddings and dimred
-- Statistical workflows
-- Provenance capture
+.. note::
 
-The library assumes real datasets are messy. Unified-table validation and
-column derivation are therefore core features, not pre-processing footnotes.
-They make downstream analysis functions composable and reproducible.
+   **Start with** :doc:`quickstart` to validate a first event table, run a
+   representative analysis pass, and get the package into a reproducible local
+   loop before diving into the broader workflow and API material.
 
-Typical Workflow
-----------------
+Guides
+------
 
-1. Load event-table records.
-2. Validate and derive required analytical columns.
-3. Select one or more analysis families.
-4. Run models and write summaries/artifacts.
-5. Interpret outputs in study context and preserve provenance.
+Learn the table contract, setup flow, and analysis workflow patterns that
+shape a stable research pipeline.
+
+- :doc:`quickstart`
+- :doc:`installation`
+- :doc:`concepts`
+- :doc:`typical_workflow`
+- :doc:`workflows`
+- :doc:`analysis_recipes`
+
+Examples
+--------
+
+Browse runnable examples that show the public API in action across the major
+analysis families.
+
+- :doc:`examples/index`
+- :doc:`examples/basic_usage`
+- :doc:`examples/unified_table_validation`
+- :doc:`examples/sequence_from_table`
+- :doc:`examples/dimred_pca`
+- :doc:`examples/stats_regression`
+
+Reference
+---------
+
+Look up the stable import surface, CLI behavior, and documentation for the
+core table contract and optional extras.
+
+- :doc:`api`
+- :doc:`cli_reference`
+- :doc:`unified_table_schema`
+- :doc:`dependencies_and_extras`
 
 Integration With The Ecosystem
 ------------------------------
@@ -66,29 +87,16 @@ Start Here
 
 .. toctree::
    :maxdepth: 2
-   :caption: Documentation
    :hidden:
 
    quickstart
    installation
    concepts
    typical_workflow
-   examples/index
-   api
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Development
-   :hidden:
-
-   dependencies_and_extras
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Additional Guides
-   :hidden:
-
-   unified_table_schema
    workflows
    analysis_recipes
+   examples/index
+   api
+   unified_table_schema
    cli_reference
+   dependencies_and_extras

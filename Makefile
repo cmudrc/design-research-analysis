@@ -63,7 +63,7 @@ qa: lint fmt-check type test
 coverage: check-python runtime-cache
 	mkdir -p artifacts/coverage
 	PYTHONPATH=src $(PYTEST) --cov=src/design_research_analysis --cov-report=term --cov-report=json:artifacts/coverage/coverage.json -q
-	$(PYTHON) scripts/check_coverage_thresholds.py --coverage-json artifacts/coverage/coverage.json --minimum 80
+	$(PYTHON) scripts/check_coverage_thresholds.py --coverage-json artifacts/coverage/coverage.json --minimum 90
 
 docstrings-check: check-python
 	$(PYTHON) scripts/check_google_docstrings.py
