@@ -29,7 +29,7 @@ This package centers on reproducible analysis workflows with a small top-level A
 ## Quickstart
 
 Requires Python 3.12+.
-Maintainer workflows target Python `3.12.12` (`.python-version`).
+Maintainer workflows target Python `3.12` (`.python-version`).
 
 ```bash
 python -m venv .venv

@@ -12,7 +12,7 @@ dimensionality-reduction, and statistical pipelines.
 - Create and activate a virtual environment:
   - `python -m venv .venv`
   - `source .venv/bin/activate`
-- The reproducible interpreter target lives in `.python-version` (`3.12.12`).
+- The preferred interpreter target lives in `.python-version` (`3.12`).
 - Install local tooling with `make dev`.
 
 ## Testing And Validation
