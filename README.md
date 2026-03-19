@@ -29,7 +29,7 @@ This package centers on reproducible analysis workflows with a small top-level A
 ## Quickstart
 
 Requires Python 3.12+.
-Reproducible release installs are pinned to Python `3.12.12` (`.python-version`).
+Maintainer workflows target Python `3.12.12` (`.python-version`).
 
 ```bash
 python -m venv .venv
@@ -44,7 +44,7 @@ Run a compact end-to-end example:
 PYTHONPATH=src python examples/basic_usage.py
 ```
 
-For frozen installs and release-check guidance, see [Dependencies and Extras](https://cmudrc.github.io/design-research-analysis/dependencies_and_extras.html).
+For dependency profiles and release-check guidance, see [Dependencies and Extras](https://cmudrc.github.io/design-research-analysis/dependencies_and_extras.html).
 
 ## CLI
 

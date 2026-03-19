@@ -39,7 +39,6 @@ dev = [
   "sphinx>=7.4,<9",
   "sphinx-rtd-theme>=2.0,<4",
   "twine>=5.1,<7",
-  "uv>=0.6,<1",
 ]
 table = []
 data = ["pandas>=2.2,<3"]

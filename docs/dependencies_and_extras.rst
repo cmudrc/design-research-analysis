@@ -25,6 +25,8 @@ Or use:
 
    make dev
 
+Maintainer workflows target Python ``3.12.12`` from ``.python-version``.
+
 Extras Matrix
 -------------
 
@@ -62,5 +64,4 @@ Recommended install profiles:
 - inference-heavy studies: ``pip install -e ".[stats,data]"``
 - broad analysis workstation setup: ``pip install -e ".[all]"``
 
-Reproducible and release flows are exposed via ``make repro``, ``make lock``,
-and ``make release-check``.
+Release packaging validation is exposed via ``make release-check``.
