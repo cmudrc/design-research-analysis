@@ -23,6 +23,7 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
+    "sphinx_copybutton",
 ]
 
 napoleon_google_docstring = True
@@ -33,6 +34,7 @@ autodoc_typehints = "none"
 autosummary_generate = True
 autosummary_imported_members = True
 nitpicky = True
+nitpick_ignore = [("py:class", "design_research_analysis._comparison.ComparableResultMixin")]
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
