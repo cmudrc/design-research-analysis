@@ -75,7 +75,8 @@ all = [
 design-research-analysis = "design_research_analysis.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/cmudrc/design-research-analysis"
+Homepage = "https://cmudrc.github.io/design-research-analysis/"
+Documentation = "https://cmudrc.github.io/design-research-analysis/"
 Repository = "https://github.com/cmudrc/design-research-analysis"
 Issues = "https://github.com/cmudrc/design-research-analysis/issues"
 

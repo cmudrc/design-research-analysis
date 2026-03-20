@@ -17,7 +17,8 @@ export MPLBACKEND
 
 .PHONY: help check-python dev install-dev \
 	lint fmt fmt-check type test qa coverage docstrings-check \
-	runtime-cache run-example run-examples examples-coverage docs docs-build docs-check docs-linkcheck \
+	runtime-cache run-example run-examples examples-test examples-coverage examples-metrics \
+	docs docs-build docs-check docs-linkcheck \
 	release-check ci clean
 
 help:
@@ -27,7 +28,9 @@ help:
 	@echo "  qa               Run lint, fmt-check, type, and test."
 	@echo "  run-example      Execute the bundled example script."
 	@echo "  run-examples     Execute all example scripts."
+	@echo "  examples-test    Execute all bundled example scripts."
 	@echo "  examples-coverage Check public API coverage across examples."
+	@echo "  examples-metrics Generate example and public-API badge artifacts."
 	@echo "  docs             Build the HTML docs."
 	@echo "  ci               Run the main local CI checks."
 
@@ -71,15 +74,21 @@ docstrings-check: check-python
 run-example: check-python runtime-cache
 	PYTHONPATH=src $(PYTHON) examples/basic_usage.py
 
-run-examples: check-python runtime-cache
+examples-test: check-python runtime-cache
 	@set -e; \
 	for script in $$(ls examples/*.py | sort); do \
 		echo "Running $$script"; \
 		PYTHONPATH=src $(PYTHON) "$$script"; \
 	done
 
+run-examples: examples-test
+
 examples-coverage: check-python
 	$(PYTHON) scripts/check_example_api_coverage.py --minimum 35
+
+examples-metrics: check-python runtime-cache examples-test
+	$(PYTHON) scripts/generate_examples_metrics.py
+	$(PYTHON) scripts/generate_examples_badges.py
 
 docs-build: check-python runtime-cache
 	$(PYTHON) scripts/generate_example_docs.py

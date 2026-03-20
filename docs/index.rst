@@ -12,6 +12,26 @@ Unified-table validation and column derivation are core features, not
 pre-processing footnotes. They make downstream analyses composable,
 reproducible, and easier to compare across studies.
 
+.. raw:: html
+
+   <div class="drc-badge-row">
+     <a class="drc-badge-link" href="https://github.com/cmudrc/design-research-analysis/actions/workflows/ci.yml">
+       <img alt="CI" src="https://github.com/cmudrc/design-research-analysis/actions/workflows/ci.yml/badge.svg">
+     </a>
+     <a class="drc-badge-link" href="https://github.com/cmudrc/design-research-analysis/actions/workflows/ci.yml">
+       <img alt="Coverage" src="https://raw.githubusercontent.com/cmudrc/design-research-analysis/main/.github/badges/coverage.svg">
+     </a>
+     <a class="drc-badge-link" href="https://github.com/cmudrc/design-research-analysis/actions/workflows/examples.yml">
+       <img alt="Examples Passing" src="https://raw.githubusercontent.com/cmudrc/design-research-analysis/main/.github/badges/examples-passing.svg">
+     </a>
+     <a class="drc-badge-link" href="https://github.com/cmudrc/design-research-analysis/actions/workflows/examples.yml">
+       <img alt="Public API In Examples" src="https://raw.githubusercontent.com/cmudrc/design-research-analysis/main/.github/badges/examples-api-coverage.svg">
+     </a>
+     <a class="drc-badge-link" href="https://github.com/cmudrc/design-research-analysis/actions/workflows/docs-pages.yml">
+       <img alt="Docs" src="https://github.com/cmudrc/design-research-analysis/actions/workflows/docs-pages.yml/badge.svg">
+     </a>
+   </div>
+
 .. note::
 
    **Start with** :doc:`quickstart` to validate a first event table, run a

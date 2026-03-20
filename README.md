@@ -1,5 +1,8 @@
 # design-research-analysis
 [![CI](https://github.com/cmudrc/design-research-analysis/actions/workflows/ci.yml/badge.svg)](https://github.com/cmudrc/design-research-analysis/actions/workflows/ci.yml)
+[![Coverage](https://raw.githubusercontent.com/cmudrc/design-research-analysis/main/.github/badges/coverage.svg)](https://github.com/cmudrc/design-research-analysis/actions/workflows/ci.yml)
+[![Examples Passing](https://raw.githubusercontent.com/cmudrc/design-research-analysis/main/.github/badges/examples-passing.svg)](https://github.com/cmudrc/design-research-analysis/actions/workflows/examples.yml)
+[![Public API In Examples](https://raw.githubusercontent.com/cmudrc/design-research-analysis/main/.github/badges/examples-api-coverage.svg)](https://github.com/cmudrc/design-research-analysis/actions/workflows/examples.yml)
 [![Docs](https://github.com/cmudrc/design-research-analysis/actions/workflows/docs-pages.yml/badge.svg)](https://github.com/cmudrc/design-research-analysis/actions/workflows/docs-pages.yml)
 
 <!-- release-callout:start -->
