@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import numpy as np
+import pytest
+
 import design_research_analysis as package
 
 
@@ -70,3 +73,73 @@ def test_public_exports_match_the_curated_api() -> None:
         "visualization",
         "write_run_manifest",
     ]
+
+
+def test_dimred_compatibility_wrappers_delegate(monkeypatch: pytest.MonkeyPatch) -> None:
+    import design_research_analysis.dimred as legacy_dimred
+
+    projection = legacy_dimred.ProjectionResult(
+        coordinates=np.asarray([[0.0, 1.0], [1.0, 0.0]], dtype=float),
+        record_ids=["r1", "r2"],
+        method="pca",
+    )
+    cluster_payload = {"labels": [0, 1], "method": "kmeans", "centers": [[0.0, 1.0], [1.0, 0.0]]}
+    captured: dict[str, object] = {}
+
+    def _fake_build(embeddings: object, **kwargs: object) -> legacy_dimred.EmbeddingMapResult:
+        captured["embeddings"] = np.asarray(embeddings)
+        captured["build_kwargs"] = kwargs
+        return projection
+
+    def _fake_cluster(
+        embedding_map: object,
+        **kwargs: object,
+    ) -> dict[str, object]:
+        captured["projection"] = embedding_map
+        captured["cluster_kwargs"] = kwargs
+        return cluster_payload
+
+    monkeypatch.setattr(legacy_dimred, "build_embedding_map", _fake_build)
+    monkeypatch.setattr(legacy_dimred, "cluster_embedding_map", _fake_cluster)
+
+    reduced = legacy_dimred.reduce_dimensions(
+        np.asarray([[1.0, 2.0], [3.0, 4.0]], dtype=float),
+        method="umap",
+        n_components=2,
+        random_state=17,
+        perplexity=9.0,
+        n_neighbors=5,
+        min_dist=0.2,
+    )
+    clustered = legacy_dimred.cluster_projection(
+        projection,
+        method="agglomerative",
+        n_clusters=2,
+        random_state=3,
+        max_iter=25,
+    )
+
+    assert reduced is projection
+    assert clustered == cluster_payload
+    assert np.array_equal(
+        captured["embeddings"],
+        np.asarray([[1.0, 2.0], [3.0, 4.0]], dtype=float),
+    )
+    assert captured["build_kwargs"] == {
+        "method": "umap",
+        "n_components": 2,
+        "random_state": 17,
+        "perplexity": 9.0,
+        "n_neighbors": 5,
+        "min_dist": 0.2,
+    }
+    assert captured["projection"] is projection
+    assert captured["cluster_kwargs"] == {
+        "method": "agglomerative",
+        "n_clusters": 2,
+        "random_state": 3,
+        "max_iter": 25,
+    }
+    assert legacy_dimred.ProjectionResult is legacy_dimred.EmbeddingMapResult
+    assert "reduce_dimensions" in legacy_dimred.__all__
+    assert "cluster_projection" in legacy_dimred.__all__
