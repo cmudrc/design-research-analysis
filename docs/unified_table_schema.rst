@@ -8,6 +8,10 @@ The unified table schema is the canonical input contract across all analysis
 families in this package. It enables repeatable pipelines while still allowing
 loose real-world data.
 
+If your input originated in ``design-research-experiments``, see
+:doc:`experiments_handoff` for the recommended ``events.csv`` validation and
+join workflow.
+
 Column Expectations
 -------------------
 
@@ -32,6 +36,10 @@ Loose Schema Strategy
 
 Missing values for ``actor_id`` and ``event_type`` can be derived with
 deterministic mapper functions before running sequence analyses.
+
+In the experiments export handoff, ``record_id`` may also be derived when the
+upstream artifact keeps stable event rows but does not emit explicit record
+identifiers.
 
 Key API surfaces:
 

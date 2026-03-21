@@ -7,6 +7,10 @@ Typical Workflow
 Load event-table records and identify the study context (conditions, actors,
 outcomes).
 
+If you are working from ``design-research-experiments`` exports, start with
+``events.csv`` and use :doc:`experiments_handoff` for the canonical validation
+and rejoin flow back to ``runs.csv`` and ``evaluations.csv``.
+
 2. Instantiate core objects
 ---------------------------
 
