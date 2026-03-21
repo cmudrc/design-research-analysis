@@ -7,13 +7,16 @@ This page documents the supported top-level public API from
 Top-level groups:
 
 - Comparison: ``ComparisonResult``
-- Module facades: ``dataset``, ``dimred``, ``language``, ``runtime``, ``sequence``, ``stats``
+- Module facades: ``dataset``, ``dimred``, ``language``, ``runtime``, ``sequence``,
+  ``stats``, ``visualization``
 - Unified table contracts: ``UnifiedTableConfig``, ``UnifiedTableValidationReport``,
   ``coerce_unified_table``, ``derive_columns``, ``validate_unified_table``
 - Sequence: ``MarkovChainResult``, ``DiscreteHMMResult``, ``GaussianHMMResult``,
   ``DecodeResult``, ``fit_markov_chain_from_table``, ``fit_discrete_hmm_from_table``,
   ``fit_text_gaussian_hmm_from_table``, ``decode_hmm``, ``plot_transition_matrix``,
   ``plot_state_graph``
+- Visualization: ``plot_design_process_timeline``, ``plot_idea_trajectory``,
+  ``plot_convergence_curve``
 - Language: ``compute_language_convergence``, ``compute_semantic_distance_trajectory``,
   ``fit_topic_model``, ``score_sentiment``
 - Dimensionality reduction: ``embed_records``, ``reduce_dimensions``,

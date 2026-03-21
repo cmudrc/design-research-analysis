@@ -45,6 +45,9 @@ def test_public_exports_match_the_curated_api() -> None:
         "language",
         "minimum_detectable_effect",
         "permutation_test",
+        "plot_convergence_curve",
+        "plot_design_process_timeline",
+        "plot_idea_trajectory",
         "plot_state_graph",
         "plot_transition_matrix",
         "power_curve",
@@ -57,5 +60,6 @@ def test_public_exports_match_the_curated_api() -> None:
         "stats",
         "validate_dataframe",
         "validate_unified_table",
+        "visualization",
         "write_run_manifest",
     ]

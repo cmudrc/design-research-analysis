@@ -18,6 +18,19 @@ Key API Entry Points
 - :func:`design_research_analysis.fit_discrete_hmm_from_table`
 - :func:`design_research_analysis.fit_text_gaussian_hmm_from_table`
 - :func:`design_research_analysis.decode_hmm`
+- :func:`design_research_analysis.plot_design_process_timeline`
+
+Timeline View
+-------------
+
+``plot_design_process_timeline`` renders one session as an actor-by-time
+timeline. Use it when you want a fast visual audit of who acted when before
+fitting transition models.
+
+.. image:: _static/idea_space_metrics/design_process_timeline.png
+   :alt: Example timeline showing one design session across actors and event types.
+   :width: 95%
+   :align: center
 
 CLI Path
 --------

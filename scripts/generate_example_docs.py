@@ -231,6 +231,18 @@ def _render_examples_index(specs: list[ExampleDocSpec]) -> str:
         "**Runtime:** short",
         "**Teaches:** projection choices, clustering interpretation, geometry-aware summaries",
         "",
+        "Idea Space Metrics",
+        "~~~~~~~~~~~~~~~~~~",
+        "",
+        "Compute idea-space coverage and trajectory summaries, then render the main plots.",
+        "",
+        "**Requires:** base install",
+        "**Runtime:** short",
+        (
+            "**Teaches:** coverage metrics, divergence diagnostics, and top-level "
+            "visualization helpers"
+        ),
+        "",
         "Stats Regression",
         "~~~~~~~~~~~~~~~~",
         "",
