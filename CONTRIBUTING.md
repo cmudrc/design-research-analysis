@@ -24,11 +24,15 @@ Run these before opening a pull request:
 make fmt
 make lint
 make type
+make coverage
 make docstrings-check
 make test
 make docs-check
 make docs
 ```
+
+The repository maintains a 90% total coverage floor, and `make coverage`
+enforces that threshold locally using the same JSON-based check as CI.
 
 Optional but useful:
 

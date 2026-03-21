@@ -58,6 +58,7 @@ This demonstrates the package design: schema discipline first, analysis second.
 -------------------
 
 - :doc:`concepts`
+- :doc:`experiments_handoff`
 - :doc:`typical_workflow`
 - :doc:`workflows`
 - :doc:`examples/index`
@@ -69,3 +70,7 @@ In a typical study, ``design-research-agents`` provides executable
 participants, ``design-research-problems`` supplies the task,
 ``design-research-experiments`` defines the study structure, and
 ``design-research-analysis`` interprets the resulting records.
+
+If you are starting from exported study artifacts rather than an in-memory
+table, use :doc:`experiments_handoff` for the recommended ``events.csv`` to
+analysis path.
