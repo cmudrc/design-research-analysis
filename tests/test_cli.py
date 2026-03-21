@@ -266,13 +266,13 @@ def test_cli_run_language_topic_error_and_trajectory_output(
     assert trajectory_csv.read_text(encoding="utf-8").startswith("group,step,semantic_distance")
 
 
-def test_cli_run_dimred_with_stubbed_backends(
+def test_cli_run_embedding_maps_with_stubbed_backends(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     input_csv = tmp_path / "input.csv"
-    summary_json = tmp_path / "dimred.json"
-    projection_csv = tmp_path / "projection.csv"
+    summary_json = tmp_path / "embedding_maps.json"
+    map_csv = tmp_path / "embedding_maps.csv"
     _write_fixture_csv(input_csv)
 
     fake_embeddings = SimpleNamespace(
@@ -280,34 +280,147 @@ def test_cli_run_dimred_with_stubbed_backends(
         record_ids=["r1", "r2", "r3"],
         to_dict=lambda: {"shape": [3, 2]},
     )
-    fake_projection = SimpleNamespace(
-        projection=np.asarray([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]]),
+    fake_map = SimpleNamespace(
+        coordinates=np.asarray([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]]),
+        record_ids=["r1", "r2", "r3"],
         to_dict=lambda: {"shape": [3, 2]},
     )
     monkeypatch.setattr(cli_module, "embed_records", lambda *args, **kwargs: fake_embeddings)
-    monkeypatch.setattr(cli_module, "reduce_dimensions", lambda *args, **kwargs: fake_projection)
     monkeypatch.setattr(
         cli_module,
-        "cluster_projection",
+        "compare_embedding_maps",
+        lambda *args, **kwargs: {"pca": fake_map},
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "cluster_embedding_map",
         lambda *args, **kwargs: {"labels": [0, 1, 0], "method": "kmeans"},
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "compute_design_space_coverage",
+        lambda *args, **kwargs: {"pairwise_spread": {"mean": 0.42}},
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "compute_idea_space_trajectory",
+        lambda *args, **kwargs: {"groups": {"s1": {"path_length": 1.0}}},
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "compute_divergence_convergence",
+        lambda *args, **kwargs: {"groups": {"s1": {"dominant_direction": "diverging"}}},
     )
 
     exit_code = main(
         [
-            "run-dimred",
+            "run-embedding-maps",
             "--input",
             str(input_csv),
             "--summary-json",
             str(summary_json),
-            "--projection-csv",
-            str(projection_csv),
+            "--map-csv",
+            str(map_csv),
         ]
     )
 
     assert exit_code == 0
     payload = json.loads(summary_json.read_text(encoding="utf-8"))
-    _assert_envelope(payload, analysis="dimred", mode="pca")
-    assert projection_csv.exists()
+    _assert_envelope(payload, analysis="embedding_maps", mode="pca")
+    assert payload["coverage"]["pca"]["pairwise_spread"]["mean"] == 0.42
+    assert payload["trajectory"]["pca"]["divergence_convergence"]["groups"]["s1"][
+        "dominant_direction"
+    ] == ("diverging")
+    assert map_csv.exists()
+
+
+def test_cli_run_embedding_maps_feature_mode_and_png_outputs(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    input_csv = tmp_path / "input.csv"
+    summary_json = tmp_path / "embedding_maps.json"
+    map_png = tmp_path / "embedding_map.png"
+    comparison_png = tmp_path / "embedding_maps_grid.png"
+    _write_fixture_csv(input_csv)
+
+    fake_map = SimpleNamespace(
+        coordinates=np.asarray([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]]),
+        record_ids=["r1", "r2", "r3"],
+        to_dict=lambda: {"shape": [3, 2]},
+    )
+    single_figure = _FakeFigure()
+    comparison_figure = _FakeFigure()
+
+    monkeypatch.setattr(
+        cli_module,
+        "compare_embedding_maps",
+        lambda *args, **kwargs: {"pca": fake_map, "umap": fake_map},
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "cluster_embedding_map",
+        lambda *args, **kwargs: {"labels": [0, 1, 0], "method": "kmeans"},
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "compute_design_space_coverage",
+        lambda *args, **kwargs: {"pairwise_spread": {"mean": 0.42}},
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "compute_idea_space_trajectory",
+        lambda *args, **kwargs: {"groups": {"s1": {"path_length": 1.0}}},
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "compute_divergence_convergence",
+        lambda *args, **kwargs: {"groups": {"s1": {"dominant_direction": "diverging"}}},
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "plot_embedding_map",
+        lambda *args, **kwargs: (single_figure, object()),
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "plot_embedding_map_grid",
+        lambda *args, **kwargs: (comparison_figure, [object(), object()]),
+    )
+
+    exit_code = main(
+        [
+            "run-embedding-maps",
+            "--input",
+            str(input_csv),
+            "--summary-json",
+            str(summary_json),
+            "--feature-columns",
+            "x1,x2",
+            "--method",
+            "pca",
+            "--method",
+            "umap",
+            "--trace-column",
+            "session_id",
+            "--order-column",
+            "timestamp",
+            "--value-column",
+            "value",
+            "--map-png",
+            str(map_png),
+            "--comparison-png",
+            str(comparison_png),
+        ]
+    )
+
+    assert exit_code == 0
+    payload = json.loads(summary_json.read_text(encoding="utf-8"))
+    _assert_envelope(payload, analysis="embedding_maps", mode="multi-method")
+    assert payload["source"]["mode"] == "features"
+    assert set(payload["maps"]) == {"pca", "umap"}
+    assert single_figure.saved == [str(map_png)]
+    assert comparison_figure.saved == [str(comparison_png)]
 
 
 def test_cli_run_sequence_discrete_and_text_modes_with_matrix_output(

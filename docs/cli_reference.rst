@@ -106,20 +106,27 @@ Runs semantic convergence plus sentiment analysis, and optionally topic modeling
      --include-topics \
      --n-topics 6
 
-``run-dimred``
-~~~~~~~~~~~~~~
+``run-embedding-maps``
+~~~~~~~~~~~~~~~~~~~~~~
 
-Runs embedding, projection, and clustering.
+Runs embedding-map construction, clustering, and optional plotting/trajectory diagnostics.
 
 .. code-block:: bash
 
-   design-research-analysis run-dimred \
+   design-research-analysis run-embedding-maps \
      --input data/events.csv \
-     --summary-json artifacts/dimred.json \
-     --projection-csv artifacts/projection.csv \
+     --summary-json artifacts/embedding_maps.json \
+     --map-csv artifacts/embedding_maps.csv \
      --method pca \
-     --n-components 2 \
-     --n-clusters 3
+     --method umap \
+     --trace-column session_id \
+     --order-column timestamp \
+     --comparison-png artifacts/embedding_maps.png
+
+The summary JSON includes ``maps``, ``clustering``, ``coverage``, and
+``trajectory`` blocks keyed by method name. Text-driven runs also include an
+``embedding`` block, while feature-driven runs report the selected source
+columns.
 
 ``run-sequence``
 ~~~~~~~~~~~~~~~~

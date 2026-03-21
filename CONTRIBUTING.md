@@ -8,11 +8,12 @@ source .venv/bin/activate
 make dev
 ```
 
-For a reproducible install based on `uv.lock`:
+The preferred maintainer interpreter is set in `.python-version` (`3.12`).
+
+Before cutting a release, run:
 
 ```bash
-make lock
-make repro
+make release-check
 ```
 
 ## Local Quality Checks
@@ -23,11 +24,15 @@ Run these before opening a pull request:
 make fmt
 make lint
 make type
+make coverage
 make docstrings-check
 make test
 make docs-check
 make docs
 ```
+
+The repository maintains a 90% total coverage floor, and `make coverage`
+enforces that threshold locally using the same JSON-based check as CI.
 
 Optional but useful:
 

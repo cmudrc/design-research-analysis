@@ -15,6 +15,8 @@ Key API Entry Points
 --------------------
 
 - :func:`design_research_analysis.compare_groups`
+- :func:`design_research_analysis.build_condition_metric_table`
+- :func:`design_research_analysis.compare_condition_pairs`
 - :func:`design_research_analysis.fit_regression`
 - :func:`design_research_analysis.fit_mixed_effects`
 - :func:`design_research_analysis.bootstrap_ci`

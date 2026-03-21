@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "design-research-analysis"
-version = "0.1.0"
+version = "0.1.1"
 description = "Utilities for design research analysis workflows"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -33,6 +33,7 @@ dev = [
   "build>=1.2,<2",
   "mypy>=1.10,<2",
   "pre-commit>=3.7,<5",
+  "pydata-sphinx-theme>=0.16,<1",
   "pytest>=8.2,<9",
   "pytest-cov>=7.0,<8",
   "ruff>=0.6.0,<1",
@@ -40,7 +41,6 @@ dev = [
   "sphinx-copybutton>=0.5,<1",
   "sphinx-rtd-theme>=2.0,<4",
   "twine>=5.1,<7",
-  "uv>=0.6,<1",
 ]
 table = []
 data = ["pandas>=2.2,<3"]
@@ -53,8 +53,16 @@ embeddings = ["sentence-transformers>=3.0,<4"]
 lang = [
   "scikit-learn>=1.5,<2",
 ]
-dimred = [
+maps = [
+  "pacmap>=0.8,<1",
   "scikit-learn>=1.5,<2",
+  "trimap>=1.1,<2",
+  "umap-learn>=0.5.7,<1",
+]
+dimred = [
+  "pacmap>=0.8,<1",
+  "scikit-learn>=1.5,<2",
+  "trimap>=1.1,<2",
   "umap-learn>=0.5.7,<1",
 ]
 stats = [
@@ -67,7 +75,9 @@ all = [
   "networkx>=3.3,<4",
   "scipy>=1.11,<2",
   "sentence-transformers>=3.0,<4",
+  "pacmap>=0.8,<1",
   "scikit-learn>=1.5,<2",
+  "trimap>=1.1,<2",
   "umap-learn>=0.5.7,<1",
   "statsmodels>=0.14,<1",
   "pandas>=2.2,<3",
@@ -77,7 +87,8 @@ all = [
 design-research-analysis = "design_research_analysis.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/cmudrc/design-research-analysis"
+Homepage = "https://cmudrc.github.io/design-research-analysis/"
+Documentation = "https://cmudrc.github.io/design-research-analysis/"
 Repository = "https://github.com/cmudrc/design-research-analysis"
 Issues = "https://github.com/cmudrc/design-research-analysis/issues"
 
@@ -135,12 +146,16 @@ module = [
   "matplotlib.*",
   "networkx",
   "networkx.*",
+  "pacmap",
+  "pacmap.*",
   "scipy",
   "scipy.*",
   "sentence_transformers",
   "sentence_transformers.*",
   "sklearn",
   "sklearn.*",
+  "trimap",
+  "trimap.*",
   "umap",
   "umap.*",
   "pandas",

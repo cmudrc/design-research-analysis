@@ -222,14 +222,29 @@ def _render_examples_index(specs: list[ExampleDocSpec]) -> str:
             "text-study interpretation"
         ),
         "",
-        "Dimred PCA",
-        "~~~~~~~~~~",
+        "Embedding Maps Trajectories",
+        "~~~~~~~~~~~~~~~~~~~~~~~~~~~",
         "",
-        "Project and cluster embeddings for structure inspection.",
+        "Plot trace-aware embedding maps with scalar value overlays.",
         "",
-        "**Requires:** ``dimred``",
+        "**Requires:** ``maps``",
         "**Runtime:** short",
-        "**Teaches:** projection choices, clustering interpretation, geometry-aware summaries",
+        (
+            "**Teaches:** multi-method map comparison, trace overlays, "
+            "and scalar-colored trajectories"
+        ),
+        "",
+        "Idea Space Metrics",
+        "~~~~~~~~~~~~~~~~~~",
+        "",
+        "Compute idea-space coverage and trajectory summaries, then render the main plots.",
+        "",
+        "**Requires:** base install",
+        "**Runtime:** short",
+        (
+            "**Teaches:** coverage metrics, divergence diagnostics, and top-level "
+            "visualization helpers"
+        ),
         "",
         "Stats Regression",
         "~~~~~~~~~~~~~~~~",

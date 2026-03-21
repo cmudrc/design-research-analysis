@@ -46,13 +46,19 @@ Language Recipe (Custom Embedder)
    )
    print(convergence.direction_by_group)
 
-Dimensionality Reduction Recipe
--------------------------------
+Embedding Maps Recipe
+---------------------
 
 .. code-block:: python
 
    import numpy as np
-   from design_research_analysis import cluster_projection, reduce_dimensions
+   from design_research_analysis import (
+       build_embedding_map,
+       cluster_embedding_map,
+       compute_design_space_coverage,
+       compute_divergence_convergence,
+       compute_idea_space_trajectory,
+   )
 
    vectors = np.asarray(
        [
@@ -62,9 +68,18 @@ Dimensionality Reduction Recipe
            [0.1, 0.9, 0.3],
        ]
    )
-   projection = reduce_dimensions(vectors, method="pca", n_components=2)
-   clusters = cluster_projection(projection.projection, n_clusters=2)
+   embedding_map = build_embedding_map(vectors, method="pca", n_components=2)
+   clusters = cluster_embedding_map(embedding_map, n_clusters=2)
+   coverage = compute_design_space_coverage(embedding_map)
+   trajectory = compute_idea_space_trajectory(
+       embedding_map,
+       timestamps=[0, 1, 2, 3],
+       groups=["session-a"] * 4,
+   )
+   dynamics = compute_divergence_convergence(trajectory, window=2)
    print(clusters["labels"])
+   print(coverage["pairwise_spread"]["mean"])
+   print(dynamics["groups"]["session-a"]["dominant_direction"])
 
 Statistics Recipe
 -----------------
@@ -77,6 +92,36 @@ Statistics Recipe
    y = [1.0, 3.0, 5.0, 7.0]
    reg = fit_regression(X, y, feature_names=["x"])
    print(reg.coefficients, reg.intercept, reg.r2)
+
+Experiment Condition Comparison Recipe
+--------------------------------------
+
+.. code-block:: python
+
+   from design_research_analysis import (
+       build_condition_metric_table,
+       compare_condition_pairs,
+   )
+
+   condition_metric_rows = build_condition_metric_table(
+       runs_rows,
+       metric="market_share_proxy",
+       condition_column="selection_strategy",
+       conditions=conditions_rows,
+       evaluations=evaluations_rows,
+   )
+
+   report = compare_condition_pairs(
+       condition_metric_rows,
+       condition_pairs=[
+           ("profit_focus_prompt", "neutral_prompt"),
+           ("neutral_prompt", "random_selection"),
+       ],
+       alternative="greater",
+       seed=17,
+   )
+   print(report.render_brief())
+   print(report.to_significance_rows())
 
 Dataset And Provenance Recipe
 -----------------------------

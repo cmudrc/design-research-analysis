@@ -7,7 +7,7 @@ Introduction
 ------------
 
 Run a realistic small-sample lab workflow across control vs reframed conditions
-with sequence, language, dataset, dimensionality-reduction, statistical, and
+with sequence, language, dataset, embedding-map, statistical, and
 provenance outputs.
 
 Technical Implementation
@@ -17,8 +17,8 @@ Technical Implementation
 2. Validate table quality and compute sequence/language summaries.
 3. Profile and validate a dataframe schema; generate a codebook.
 4. Run group comparison, regression, bootstrap, permutation, and power helpers.
-5. Run PCA + clustering and write a reproducibility manifest with attached
-   provenance payload.
+5. Run PCA embedding-map clustering and write a reproducibility manifest with
+   attached provenance payload.
 
 .. literalinclude:: ../../examples/lab_study_pipeline.py
    :language: python

@@ -6,9 +6,6 @@ MYPY ?= $(PYTHON) -m mypy
 SPHINX ?= $(PYTHON) -m sphinx
 BUILD ?= $(PYTHON) -m build
 TWINE ?= $(PYTHON) -m twine
-UV ?= $(if $(wildcard .venv/bin/uv),.venv/bin/uv,uv)
-REPRO_PYTHON ?= $(shell cat .python-version 2>/dev/null || echo 3.12.12)
-REPRO_EXTRAS ?= dev
 RUNTIME_CACHE_DIR ?= artifacts/runtime
 MPLCONFIGDIR ?= $(RUNTIME_CACHE_DIR)/matplotlib
 XDG_CACHE_HOME ?= $(RUNTIME_CACHE_DIR)/xdg-cache
@@ -18,29 +15,27 @@ export MPLCONFIGDIR
 export XDG_CACHE_HOME
 export MPLBACKEND
 
-.PHONY: help check-python check-uv dev install-dev repro lock \
+.PHONY: help check-python dev install-dev \
 	lint fmt fmt-check type test qa coverage docstrings-check \
-	runtime-cache run-example run-examples examples-coverage docs docs-build docs-check docs-linkcheck \
+	runtime-cache run-example run-examples examples-test examples-coverage examples-metrics \
+	docs docs-build docs-check docs-linkcheck \
 	release-check ci clean
 
 help:
 	@echo "Common targets:"
 	@echo "  dev              Install the project in editable mode with dev dependencies."
-	@echo "  repro            Frozen reproducible install using uv.lock."
-	@echo "  lock             Regenerate uv.lock."
 	@echo "  test             Run the pytest suite."
 	@echo "  qa               Run lint, fmt-check, type, and test."
 	@echo "  run-example      Execute the bundled example script."
 	@echo "  run-examples     Execute all example scripts."
+	@echo "  examples-test    Execute all bundled example scripts."
 	@echo "  examples-coverage Check public API coverage across examples."
+	@echo "  examples-metrics Generate example and public-API badge artifacts."
 	@echo "  docs             Build the HTML docs."
 	@echo "  ci               Run the main local CI checks."
 
 check-python:
 	@$(PYTHON) -c "import pathlib, sys; print(f'Using Python {sys.version.split()[0]} at {pathlib.Path(sys.executable)}'); raise SystemExit(0 if sys.version_info >= (3, 12) else 1)" || (echo "Python >= 3.12 is required by pyproject.toml"; exit 1)
-
-check-uv:
-	@command -v $(UV) >/dev/null 2>&1 || (echo "uv is required for lock/repro targets. Install it from https://docs.astral.sh/uv/getting-started/installation/"; exit 1)
 
 runtime-cache:
 	mkdir -p "$(MPLCONFIGDIR)" "$(XDG_CACHE_HOME)"
@@ -50,12 +45,6 @@ dev:
 	$(PIP) install -e ".[dev]"
 
 install-dev: dev
-
-repro: check-uv
-	$(UV) sync --frozen --python $(REPRO_PYTHON) $(foreach extra,$(REPRO_EXTRAS),--extra $(extra))
-
-lock: check-uv
-	$(UV) lock --python $(REPRO_PYTHON)
 
 lint: check-python
 	$(RUFF) check .
@@ -77,7 +66,7 @@ qa: lint fmt-check type test
 coverage: check-python runtime-cache
 	mkdir -p artifacts/coverage
 	PYTHONPATH=src $(PYTEST) --cov=src/design_research_analysis --cov-report=term --cov-report=json:artifacts/coverage/coverage.json -q
-	$(PYTHON) scripts/check_coverage_thresholds.py --coverage-json artifacts/coverage/coverage.json --minimum 80
+	$(PYTHON) scripts/check_coverage_thresholds.py --coverage-json artifacts/coverage/coverage.json --minimum 90
 
 docstrings-check: check-python
 	$(PYTHON) scripts/check_google_docstrings.py
@@ -85,15 +74,21 @@ docstrings-check: check-python
 run-example: check-python runtime-cache
 	PYTHONPATH=src $(PYTHON) examples/basic_usage.py
 
-run-examples: check-python runtime-cache
+examples-test: check-python runtime-cache
 	@set -e; \
 	for script in $$(ls examples/*.py | sort); do \
 		echo "Running $$script"; \
 		PYTHONPATH=src $(PYTHON) "$$script"; \
 	done
 
+run-examples: examples-test
+
 examples-coverage: check-python
-	$(PYTHON) scripts/check_example_api_coverage.py --minimum 35
+	$(PYTHON) scripts/check_example_api_coverage.py --minimum 90
+
+examples-metrics: check-python runtime-cache examples-test
+	$(PYTHON) scripts/generate_examples_metrics.py
+	$(PYTHON) scripts/generate_examples_badges.py
 
 docs-build: check-python runtime-cache
 	$(PYTHON) scripts/generate_example_docs.py

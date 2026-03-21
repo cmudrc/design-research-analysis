@@ -2,22 +2,43 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 DOCS_DIR = Path("docs")
 INDEX_PATH = DOCS_DIR / "index.rst"
 API_PATH = DOCS_DIR / "api.rst"
 README_PATH = Path("README.md")
+_LABELED_TARGET_RE = re.compile(r"^.+<([^>]+)>$")
+
+
+def _normalize_toctree_target(entry: str) -> str | None:
+    """Normalize one toctree entry into a local docs target, when applicable.
+
+    Args:
+        entry: Raw stripped toctree line.
+
+    Returns:
+        The local target path without a ``.rst`` suffix, or ``None`` for
+        external links.
+    """
+    match = _LABELED_TARGET_RE.match(entry)
+    target = match.group(1).strip() if match else entry.strip()
+    if "://" in target:
+        return None
+    if target.endswith(".rst"):
+        return target[:-4]
+    return target
 
 
 def extract_toctree_entries(index_path: Path) -> tuple[str, ...]:
-    """Extract document entries from the first toctree in `index.rst`.
+    """Extract local document entries from all toctrees in ``index.rst``.
 
     Args:
         index_path: Path to the docs index file.
 
     Returns:
-        The referenced document names without suffixes.
+        The referenced local document names without suffixes.
     """
     entries: list[str] = []
     in_toctree = False
@@ -33,9 +54,11 @@ def extract_toctree_entries(index_path: Path) -> tuple[str, ...]:
         if stripped.startswith(":"):
             continue
         if line.startswith("   "):
-            entries.append(stripped)
+            target = _normalize_toctree_target(stripped)
+            if target is not None:
+                entries.append(target)
             continue
-        break
+        in_toctree = False
     return tuple(entries)
 
 

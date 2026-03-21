@@ -3,7 +3,7 @@
 ## Build Docs Locally
 
 - `make docs-check`
-- `make docs`
+- `make docs-build`
 
 ## Example Page Generation
 
@@ -17,7 +17,8 @@ Run `make docstrings-check` before merge.
 
 ## Page-Writing Conventions
 
-- Keep homepages in this order: title, tagline, what it does, highlights, typical workflow, ecosystem integration, start here.
+- Keep the homepage short: title, tagline, concise framing, quickstart callout, section-oriented links, and only the minimum ecosystem/contribution notes needed for orientation.
+- Keep the root hidden home-page toctree section-first so the PyData header and sidebar stay stable.
 - Emphasize unified-table contracts, reproducibility, and empirical interpretation.
 - Keep snippets runnable and aligned with public API exports.
 

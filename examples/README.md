@@ -10,8 +10,10 @@ docstring via ``scripts/generate_example_docs.py``.
 - `unified_table_validation.py`: normalize loose transcript rows into validated unified-table records.
 - `sequence_from_table.py`: fit a Markov chain from event-coded session traces.
 - `language_custom_embedder.py`: run convergence analysis with deterministic in-house embeddings.
-- `dimred_pca.py`: PCA projection and k-means clustering over study-level vectors.
+- `embedding_maps_trajectories.py`: trace-aware embedding maps with value overlays and comparison grids.
+- `idea_space_metrics.py`: projection-space coverage, trajectory diagnostics, and plotting helpers.
 - `stats_regression.py`: novelty-vs-iteration regression for prototype runs.
+- `condition_pair_significance.py`: join canonical experiment exports into run-level metrics and render pairwise significance summaries.
 - `lab_study_pipeline.py`: prompt-framing experiment pipeline with table checks, language/sequence/stats, and provenance manifest output.
 
 All examples use the import convention:

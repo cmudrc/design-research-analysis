@@ -1,5 +1,8 @@
 # design-research-analysis
 [![CI](https://github.com/cmudrc/design-research-analysis/actions/workflows/ci.yml/badge.svg)](https://github.com/cmudrc/design-research-analysis/actions/workflows/ci.yml)
+[![Coverage](https://raw.githubusercontent.com/cmudrc/design-research-analysis/main/.github/badges/coverage.svg)](https://github.com/cmudrc/design-research-analysis/actions/workflows/ci.yml)
+[![Examples Passing](https://raw.githubusercontent.com/cmudrc/design-research-analysis/main/.github/badges/examples-passing.svg)](https://github.com/cmudrc/design-research-analysis/actions/workflows/examples.yml)
+[![Public API In Examples](https://raw.githubusercontent.com/cmudrc/design-research-analysis/main/.github/badges/examples-api-coverage.svg)](https://github.com/cmudrc/design-research-analysis/actions/workflows/examples.yml)
 [![Docs](https://github.com/cmudrc/design-research-analysis/actions/workflows/docs-pages.yml/badge.svg)](https://github.com/cmudrc/design-research-analysis/actions/workflows/docs-pages.yml)
 
 <!-- release-callout:start -->
@@ -11,7 +14,7 @@
 
 `design-research-analysis` is the unified-table analysis layer in the cmudrc design research ecosystem.
 
-It provides typed, reusable workflows for sequence, language, dimensionality-reduction, and statistical analysis over recurring event logs.
+It provides typed, reusable workflows for sequence, language, embedding-map, and statistical analysis over recurring event logs.
 
 ## Overview
 
@@ -21,7 +24,7 @@ This package centers on reproducible analysis workflows with a small top-level A
 - Dataset profiling, schema checks, and codebook generation
 - Sequence modeling (Markov chains, discrete HMM, Gaussian HMM)
 - Language analysis (semantic convergence trajectories, topic modeling, sentiment scoring)
-- Embedding and dimensionality reduction (PCA, t-SNE, UMAP) with clustering helpers
+- Embedding maps (PCA, t-SNE, UMAP, PaCMAP, TriMap) with clustering, comparison, and trajectory-plotting helpers
 - Statistical wrappers (group comparisons, OLS regression, mixed-effects models, nonparametrics, and power)
 - Runtime provenance capture for reproducibility manifests
 - A thin CLI for deterministic pipeline runs
@@ -29,7 +32,7 @@ This package centers on reproducible analysis workflows with a small top-level A
 ## Quickstart
 
 Requires Python 3.12+.
-Reproducible release installs are pinned to Python `3.12.12` (`.python-version`).
+Maintainer workflows target Python `3.12` (`.python-version`).
 
 ```bash
 python -m venv .venv
@@ -44,7 +47,7 @@ Run a compact end-to-end example:
 PYTHONPATH=src python examples/basic_usage.py
 ```
 
-For frozen installs and release-check guidance, see [Dependencies and Extras](https://cmudrc.github.io/design-research-analysis/dependencies_and_extras.html).
+For dependency profiles and release-check guidance, see [Dependencies and Extras](https://cmudrc.github.io/design-research-analysis/dependencies_and_extras.html).
 
 ## CLI
 
@@ -54,7 +57,7 @@ The package installs a `design-research-analysis` CLI:
 design-research-analysis validate-table --input data/events.csv --summary-json artifacts/validate.json
 design-research-analysis run-sequence --input data/events.csv --summary-json artifacts/sequence.json --mode markov
 design-research-analysis run-language --input data/events.csv --summary-json artifacts/language.json --trajectory-csv artifacts/language_trajectory.csv
-design-research-analysis run-dimred --input data/events.csv --summary-json artifacts/dimred.json --projection-csv artifacts/projection.csv
+design-research-analysis run-embedding-maps --input data/events.csv --summary-json artifacts/embedding_maps.json --map-csv artifacts/embedding_maps.csv
 design-research-analysis run-stats --input data/events.csv --summary-json artifacts/stats.json --mode regression --x-columns x1,x2 --y-column y
 ```
 
@@ -81,7 +84,7 @@ Top-level exports include:
 - Table contracts: `UnifiedTableConfig`, `UnifiedTableValidationReport`, `coerce_unified_table`, `derive_columns`, `validate_unified_table`
 - Sequence: `fit_markov_chain_from_table`, `fit_discrete_hmm_from_table`, `fit_text_gaussian_hmm_from_table`, `decode_hmm`, plotting helpers, and result types
 - Language: `compute_language_convergence`, `compute_semantic_distance_trajectory`, `fit_topic_model`, `score_sentiment`
-- Dimensionality reduction: `embed_records`, `reduce_dimensions`, `cluster_projection`
+- Embedding maps: `embed_records`, `build_embedding_map`, `cluster_embedding_map`, `compare_embedding_maps`, `plot_embedding_map`, `plot_embedding_map_grid`
 - Statistics: `compare_groups`, `fit_regression`, `fit_mixed_effects`, `permutation_test`, `bootstrap_ci`, power helpers
 - Dataset + runtime: `profile_dataframe`, `validate_dataframe`, `generate_codebook`, `capture_run_context`, `attach_provenance`, `write_run_manifest`
 
