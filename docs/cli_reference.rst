@@ -109,7 +109,7 @@ Runs semantic convergence plus sentiment analysis, and optionally topic modeling
 ``run-dimred``
 ~~~~~~~~~~~~~~
 
-Runs embedding, projection, and clustering.
+Runs embedding, projection, clustering, and projection-space diagnostics.
 
 .. code-block:: bash
 
@@ -120,6 +120,10 @@ Runs embedding, projection, and clustering.
      --method pca \
      --n-components 2 \
      --n-clusters 3
+
+The summary JSON includes ``embedding``, ``projection``, ``clustering``,
+``coverage``, and ``trajectory`` blocks. The trajectory block also includes a
+divergence/convergence summary derived from the ordered projection path.
 
 ``run-sequence``
 ~~~~~~~~~~~~~~~~

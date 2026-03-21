@@ -52,7 +52,13 @@ Dimensionality Reduction Recipe
 .. code-block:: python
 
    import numpy as np
-   from design_research_analysis import cluster_projection, reduce_dimensions
+   from design_research_analysis import (
+       cluster_projection,
+       compute_design_space_coverage,
+       compute_divergence_convergence,
+       compute_idea_space_trajectory,
+       reduce_dimensions,
+   )
 
    vectors = np.asarray(
        [
@@ -64,7 +70,16 @@ Dimensionality Reduction Recipe
    )
    projection = reduce_dimensions(vectors, method="pca", n_components=2)
    clusters = cluster_projection(projection.projection, n_clusters=2)
+   coverage = compute_design_space_coverage(projection)
+   trajectory = compute_idea_space_trajectory(
+       projection,
+       timestamps=[0, 1, 2, 3],
+       groups=["session-a"] * 4,
+   )
+   dynamics = compute_divergence_convergence(trajectory, window=2)
    print(clusters["labels"])
+   print(coverage["pairwise_spread"]["mean"])
+   print(dynamics["groups"]["session-a"]["dominant_direction"])
 
 Statistics Recipe
 -----------------

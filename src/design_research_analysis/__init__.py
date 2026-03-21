@@ -3,7 +3,14 @@
 from . import dataset, dimred, language, runtime, sequence, stats
 from ._comparison import ComparisonResult
 from .dataset import generate_codebook, profile_dataframe, validate_dataframe
-from .dimred import cluster_projection, embed_records, reduce_dimensions
+from .dimred import (
+    cluster_projection,
+    compute_design_space_coverage,
+    compute_divergence_convergence,
+    compute_idea_space_trajectory,
+    embed_records,
+    reduce_dimensions,
+)
 from .language import (
     compute_language_convergence,
     compute_semantic_distance_trajectory,
@@ -62,6 +69,9 @@ __all__ = [
     "cluster_projection",
     "coerce_unified_table",
     "compare_groups",
+    "compute_design_space_coverage",
+    "compute_divergence_convergence",
+    "compute_idea_space_trajectory",
     "compute_language_convergence",
     "compute_semantic_distance_trajectory",
     "dataset",

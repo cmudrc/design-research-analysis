@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Any
 
 import numpy as np
@@ -93,6 +94,31 @@ class ProjectionResult(ComparableResultMixin):
                 "methods": [self.method, other.method],
             },
         )
+
+
+def _coerce_feature_matrix(
+    data: Sequence[Sequence[float]] | np.ndarray | EmbeddingResult | ProjectionResult,
+    *,
+    name: str,
+) -> tuple[np.ndarray, str]:
+    if isinstance(data, EmbeddingResult):
+        matrix = np.asarray(data.embeddings, dtype=float)
+        source = "embedding_result"
+    elif isinstance(data, ProjectionResult):
+        matrix = np.asarray(data.projection, dtype=float)
+        source = "projection_result"
+    else:
+        matrix = np.asarray(data, dtype=float)
+        source = "matrix"
+
+    if matrix.ndim != 2:
+        raise ValueError(f"{name} must be a 2D matrix.")
+    if matrix.shape[0] == 0:
+        raise ValueError(f"{name} must contain at least one row.")
+    if not np.isfinite(matrix).all():
+        raise ValueError(f"{name} must contain only finite numeric values.")
+
+    return matrix, source
 
 
 def _is_blank(value: Any) -> bool:
@@ -198,6 +224,430 @@ def _pca_project(embeddings: np.ndarray, *, n_components: int) -> tuple[np.ndarr
     else:
         explained = [(float(value**2) / float(denom)) for value in s[:n_components]]
     return projected, explained
+
+
+def _pairwise_distances(matrix: np.ndarray) -> np.ndarray:
+    if matrix.shape[0] < 2:
+        return np.asarray([], dtype=float)
+    row_ids, col_ids = np.triu_indices(matrix.shape[0], k=1)
+    deltas = matrix[row_ids] - matrix[col_ids]
+    return np.asarray(np.linalg.norm(deltas, axis=1), dtype=float)
+
+
+def _summarize_distances(distances: np.ndarray) -> dict[str, float]:
+    if distances.size == 0:
+        return {
+            "min": 0.0,
+            "max": 0.0,
+            "mean": 0.0,
+            "median": 0.0,
+            "std": 0.0,
+        }
+    return {
+        "min": float(np.min(distances)),
+        "max": float(np.max(distances)),
+        "mean": float(np.mean(distances)),
+        "median": float(np.median(distances)),
+        "std": float(np.std(distances)),
+    }
+
+
+def _centroid_radius_summary(matrix: np.ndarray) -> dict[str, Any]:
+    centroid = np.mean(matrix, axis=0)
+    distances = np.linalg.norm(matrix - centroid, axis=1)
+    return {
+        "centroid": centroid.astype(float).tolist(),
+        "min_radius": float(np.min(distances)),
+        "max_radius": float(np.max(distances)),
+        "mean_radius": float(np.mean(distances)),
+        "median_radius": float(np.median(distances)),
+        "std_radius": float(np.std(distances)),
+    }
+
+
+def _cross_2d(origin: tuple[float, float], a: tuple[float, float], b: tuple[float, float]) -> float:
+    return ((a[0] - origin[0]) * (b[1] - origin[1])) - (
+        (a[1] - origin[1]) * (b[0] - origin[0])
+    )
+
+
+def _convex_hull_vertices(points: np.ndarray) -> list[tuple[float, float]]:
+    unique_points = sorted({(float(point[0]), float(point[1])) for point in points})
+    if len(unique_points) <= 1:
+        return unique_points
+
+    lower: list[tuple[float, float]] = []
+    for point in unique_points:
+        while len(lower) >= 2 and _cross_2d(lower[-2], lower[-1], point) <= 0.0:
+            lower.pop()
+        lower.append(point)
+
+    upper: list[tuple[float, float]] = []
+    for point in reversed(unique_points):
+        while len(upper) >= 2 and _cross_2d(upper[-2], upper[-1], point) <= 0.0:
+            upper.pop()
+        upper.append(point)
+
+    return lower[:-1] + upper[:-1]
+
+
+def _polygon_area(vertices: list[tuple[float, float]]) -> float:
+    polygon = np.asarray(vertices, dtype=float)
+    x_coords = polygon[:, 0]
+    y_coords = polygon[:, 1]
+    return 0.5 * abs(
+        float(np.dot(x_coords, np.roll(y_coords, -1)) - np.dot(y_coords, np.roll(x_coords, -1)))
+    )
+
+
+def _polygon_perimeter(vertices: list[tuple[float, float]]) -> float:
+    polygon = np.asarray(vertices, dtype=float)
+    wrapped = np.vstack([polygon, polygon[0]])
+    return float(np.sum(np.linalg.norm(np.diff(wrapped, axis=0), axis=1)))
+
+
+def _convex_hull_summary(matrix: np.ndarray, warnings: list[str]) -> dict[str, Any]:
+    if matrix.shape[1] != 2:
+        warnings.append("Convex hull coverage is only available for 2D inputs.")
+        return {
+            "method": "convex_hull",
+            "supported": False,
+            "area": None,
+            "volume": None,
+            "perimeter": None,
+            "n_vertices": 0,
+        }
+
+    unique_points = np.unique(matrix, axis=0)
+    if unique_points.shape[0] < 3:
+        warnings.append("Convex hull coverage requires at least three unique 2D points.")
+        return {
+            "method": "convex_hull",
+            "supported": False,
+            "area": None,
+            "volume": None,
+            "perimeter": None,
+            "n_vertices": int(unique_points.shape[0]),
+        }
+
+    vertices = _convex_hull_vertices(unique_points)
+    if len(vertices) < 3:
+        warnings.append("Convex hull coverage is degenerate for collinear 2D points.")
+        return {
+            "method": "convex_hull",
+            "supported": False,
+            "area": None,
+            "volume": None,
+            "perimeter": None,
+            "n_vertices": len(vertices),
+        }
+
+    area = _polygon_area(vertices)
+    if area <= 0.0:
+        warnings.append("Convex hull coverage is degenerate for collinear 2D points.")
+        return {
+            "method": "convex_hull",
+            "supported": False,
+            "area": None,
+            "volume": None,
+            "perimeter": None,
+            "n_vertices": len(vertices),
+        }
+
+    return {
+        "method": "convex_hull",
+        "supported": True,
+        "area": float(area),
+        "volume": None,
+        "perimeter": _polygon_perimeter(vertices),
+        "n_vertices": len(vertices),
+    }
+
+
+def compute_design_space_coverage(
+    embeddings: Sequence[Sequence[float]] | np.ndarray | EmbeddingResult | ProjectionResult,
+    *,
+    method: str = "convex_hull",
+) -> dict[str, Any]:
+    """Compute geometry-aware coverage summaries for embedding or projection spaces.
+
+    Args:
+        embeddings: Raw numeric matrix or an existing dimred result object.
+        method: Hull coverage method. Currently supports ``"convex_hull"``.
+
+    Returns:
+        JSON-serializable coverage metrics.
+    """
+    if method.lower() != "convex_hull":
+        raise ValueError("Unsupported method. Valid options: convex_hull.")
+
+    matrix, source = _coerce_feature_matrix(embeddings, name="embeddings")
+    warnings: list[str] = []
+    if matrix.shape[0] < 2:
+        warnings.append("Pairwise spread metrics are degenerate for fewer than two points.")
+
+    pairwise = _pairwise_distances(matrix)
+    return {
+        "n_points": int(matrix.shape[0]),
+        "n_dimensions": int(matrix.shape[1]),
+        "pairwise_spread": {
+            "n_pairs": int(pairwise.size),
+            **_summarize_distances(pairwise),
+        },
+        "centroid_radius": _centroid_radius_summary(matrix),
+        "convex_hull": _convex_hull_summary(matrix, warnings),
+        "warnings": warnings,
+        "config": {
+            "input_source": source,
+            "method": "convex_hull",
+        },
+    }
+
+
+def _normalize_sequence(
+    values: Sequence[Any] | None,
+    *,
+    length: int,
+    label: str,
+) -> list[Any] | None:
+    if values is None:
+        return None
+    normalized = list(values)
+    if len(normalized) != length:
+        raise ValueError(f"{label} must have the same length as the input matrix.")
+    return normalized
+
+
+def _json_timestamp(value: Any) -> Any:
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, np.generic):
+        return value.item()
+    return value
+
+
+def _timestamp_sort_key(value: Any, *, index: int) -> tuple[int, float | str, int]:
+    if _is_blank(value):
+        return (2, "", index)
+    if isinstance(value, datetime):
+        return (0, float(value.timestamp()), index)
+    if isinstance(value, np.generic):
+        value = value.item()
+    if isinstance(value, (int, float)):
+        return (0, float(value), index)
+    if isinstance(value, str):
+        stripped = value.strip()
+        normalized = stripped.replace("Z", "+00:00")
+        try:
+            parsed = datetime.fromisoformat(normalized)
+        except ValueError:
+            try:
+                return (0, float(stripped), index)
+            except ValueError:
+                return (1, stripped, index)
+        return (0, float(parsed.timestamp()), index)
+    return (1, str(value), index)
+
+
+def compute_idea_space_trajectory(
+    embeddings: Sequence[Sequence[float]] | np.ndarray | EmbeddingResult | ProjectionResult,
+    *,
+    timestamps: Sequence[Any] | None = None,
+    groups: Sequence[Any] | None = None,
+) -> dict[str, Any]:
+    """Compute grouped trajectories through an embedding or projection space.
+
+    Args:
+        embeddings: Raw numeric matrix or an existing dimred result object.
+        timestamps: Optional sortable timestamps used within-group ordering.
+        groups: Optional group labels such as session or condition.
+
+    Returns:
+        JSON-serializable per-group trajectory summaries.
+    """
+    matrix, source = _coerce_feature_matrix(embeddings, name="embeddings")
+    timestamp_values = _normalize_sequence(timestamps, length=matrix.shape[0], label="timestamps")
+    group_values = _normalize_sequence(groups, length=matrix.shape[0], label="groups")
+
+    if group_values is None:
+        normalized_groups = ["__all__"] * matrix.shape[0]
+    else:
+        normalized_groups = [
+            "__all__" if _is_blank(group) else str(group) for group in group_values
+        ]
+
+    grouped_entries: dict[str, list[dict[str, Any]]] = {}
+    for index, point in enumerate(matrix):
+        timestamp = None if timestamp_values is None else timestamp_values[index]
+        group = normalized_groups[index]
+        grouped_entries.setdefault(group, []).append(
+            {
+                "index": index,
+                "point": np.asarray(point, dtype=float),
+                "timestamp": _json_timestamp(timestamp),
+                "sort_key": _timestamp_sort_key(timestamp, index=index),
+            }
+        )
+
+    groups_payload: dict[str, Any] = {}
+    warnings: list[str] = []
+    for group, entries in grouped_entries.items():
+        ordered = sorted(entries, key=lambda item: item["sort_key"])
+        ordered_points = np.vstack([entry["point"] for entry in ordered])
+        centroid = np.mean(ordered_points, axis=0)
+        centroid_distances = np.linalg.norm(ordered_points - centroid, axis=1)
+        if ordered_points.shape[0] > 1:
+            step_sizes = np.linalg.norm(np.diff(ordered_points, axis=0), axis=1)
+            net_displacement = float(np.linalg.norm(ordered_points[-1] - ordered_points[0]))
+        else:
+            step_sizes = np.asarray([], dtype=float)
+            net_displacement = 0.0
+            warnings.append(f"Trajectory group '{group}' contains a single point.")
+
+        groups_payload[group] = {
+            "ordered_indices": [int(entry["index"]) for entry in ordered],
+            "ordered_timestamps": [entry["timestamp"] for entry in ordered],
+            "points": ordered_points.astype(float).tolist(),
+            "centroid": centroid.astype(float).tolist(),
+            "centroid_distances": centroid_distances.astype(float).tolist(),
+            "step_sizes": step_sizes.astype(float).tolist(),
+            "path_length": float(np.sum(step_sizes)),
+            "net_displacement": net_displacement,
+            "step_size_variance": float(np.var(step_sizes)) if step_sizes.size else 0.0,
+            "n_points": int(ordered_points.shape[0]),
+        }
+
+    return {
+        "n_points": int(matrix.shape[0]),
+        "n_dimensions": int(matrix.shape[1]),
+        "n_groups": len(groups_payload),
+        "groups": groups_payload,
+        "warnings": warnings,
+        "config": {
+            "input_source": source,
+            "uses_provided_timestamps": timestamp_values is not None,
+            "uses_provided_groups": group_values is not None,
+        },
+    }
+
+
+def _rolling_means(values: list[float], *, window: int) -> list[float]:
+    if not values:
+        return []
+    if window >= len(values):
+        return [float(np.mean(values))]
+    rolling: list[float] = []
+    for start in range(0, len(values) - window + 1):
+        rolling.append(float(np.mean(values[start : start + window])))
+    return rolling
+
+
+def compute_divergence_convergence(
+    trajectory: Mapping[str, Any],
+    *,
+    window: int = 3,
+    tolerance: float = 1e-6,
+) -> dict[str, Any]:
+    """Summarize divergence and convergence phases from trajectory output.
+
+    Args:
+        trajectory: Output from :func:`compute_idea_space_trajectory`.
+        window: Rolling window size applied to centroid distances.
+        tolerance: Threshold used to label stable changes.
+
+    Returns:
+        JSON-serializable divergence and convergence summaries by group.
+    """
+    if window <= 0:
+        raise ValueError("window must be positive.")
+
+    groups = trajectory.get("groups")
+    if not isinstance(groups, Mapping):
+        raise ValueError("trajectory must include a 'groups' mapping.")
+
+    warnings: list[str] = []
+    payload: dict[str, Any] = {}
+    for group, raw_metrics in groups.items():
+        if not isinstance(raw_metrics, Mapping):
+            raise ValueError("trajectory group entries must be mappings.")
+        centroid_distances_raw = raw_metrics.get("centroid_distances", [])
+        centroid_distances = [float(value) for value in centroid_distances_raw]
+
+        if not centroid_distances:
+            warnings.append(f"Trajectory group '{group}' has no centroid distances.")
+            payload[str(group)] = {
+                "effective_window": 0,
+                "rolling_mean_centroid_distance": [],
+                "phase_markers": [],
+                "divergence_score": 0.0,
+                "convergence_rate": 0.0,
+                "dominant_direction": "stable",
+            }
+            continue
+
+        effective_window = min(window, len(centroid_distances))
+        if effective_window < window:
+            warnings.append(
+                f"Trajectory group '{group}' is shorter than window {window}; "
+                f"using window {effective_window}."
+            )
+
+        rolling = _rolling_means(centroid_distances, window=effective_window)
+        labels = ["stable"]
+        deltas: list[float] = []
+        for index in range(1, len(rolling)):
+            delta = rolling[index] - rolling[index - 1]
+            deltas.append(delta)
+            if delta > tolerance:
+                labels.append("diverging")
+            elif delta < -tolerance:
+                labels.append("converging")
+            else:
+                labels.append("stable")
+
+        counted_labels = labels[1:] if len(labels) > 1 else labels
+        counts = {
+            "diverging": counted_labels.count("diverging"),
+            "converging": counted_labels.count("converging"),
+            "stable": counted_labels.count("stable"),
+        }
+        max_count = max(counts.values()) if counts else 0
+        dominant_candidates = [name for name, count in counts.items() if count == max_count]
+        dominant_direction = "stable" if "stable" in dominant_candidates else dominant_candidates[0]
+
+        positive_deltas = [delta for delta in deltas if delta > tolerance]
+        convergence_count = sum(1 for delta in deltas if delta < -tolerance)
+        phase_markers = [
+            {
+                "window_index": int(index),
+                "start_step": int(index),
+                "end_step": int(index + effective_window - 1),
+                "phase": label,
+                "rolling_mean_centroid_distance": float(rolling[index]),
+            }
+            for index, label in enumerate(labels)
+        ]
+
+        payload[str(group)] = {
+            "effective_window": int(effective_window),
+            "rolling_mean_centroid_distance": [float(value) for value in rolling],
+            "phase_markers": phase_markers,
+            "divergence_score": (
+                float(np.mean(positive_deltas)) if positive_deltas else 0.0
+            ),
+            "convergence_rate": float(convergence_count / len(deltas)) if deltas else 0.0,
+            "dominant_direction": dominant_direction,
+        }
+
+    return {
+        "n_groups": len(payload),
+        "groups": payload,
+        "warnings": warnings,
+        "config": {
+            "window": int(window),
+            "tolerance": float(tolerance),
+        },
+    }
 
 
 def reduce_dimensions(
@@ -379,6 +829,9 @@ __all__ = [
     "EmbeddingResult",
     "ProjectionResult",
     "cluster_projection",
+    "compute_design_space_coverage",
+    "compute_divergence_convergence",
+    "compute_idea_space_trajectory",
     "embed_records",
     "reduce_dimensions",
 ]

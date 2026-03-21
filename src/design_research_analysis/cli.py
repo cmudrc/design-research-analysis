@@ -13,7 +13,14 @@ from typing import Any
 import numpy as np
 
 from .dataset import generate_codebook, profile_dataframe, validate_dataframe
-from .dimred import cluster_projection, embed_records, reduce_dimensions
+from .dimred import (
+    cluster_projection,
+    compute_design_space_coverage,
+    compute_divergence_convergence,
+    compute_idea_space_trajectory,
+    embed_records,
+    reduce_dimensions,
+)
 from .language import compute_language_convergence, fit_topic_model, score_sentiment
 from .runtime import capture_run_context, write_run_manifest
 from .sequence import (
@@ -88,6 +95,14 @@ def _base_payload(*, analysis: str, mode: str) -> dict[str, Any]:
         "mode": mode,
         "output_schema_version": _OUTPUT_SCHEMA_VERSION,
     }
+
+
+def _rows_have_fields(rows: list[dict[str, Any]], *field_names: str) -> bool:
+    return bool(rows) and all(not _is_blank(row.get(field_name)) for row in rows for field_name in field_names)
+
+
+def _is_blank(value: Any) -> bool:
+    return value is None or (isinstance(value, str) and value.strip() == "")
 
 
 def _load_mapper(spec: str | None) -> Any:
@@ -250,6 +265,16 @@ def _cmd_run_dimred(args: argparse.Namespace) -> int:
         n_clusters=args.n_clusters,
         random_state=args.seed,
     )
+    coverage = compute_design_space_coverage(projection)
+    if _rows_have_fields(rows, "session_id", "timestamp"):
+        trajectory = compute_idea_space_trajectory(
+            projection,
+            timestamps=[row.get("timestamp") for row in rows],
+            groups=[row.get("session_id") for row in rows],
+        )
+    else:
+        trajectory = compute_idea_space_trajectory(projection)
+    trajectory["divergence_convergence"] = compute_divergence_convergence(trajectory)
 
     projection_rows: list[dict[str, Any]] = []
     for idx, record_id in enumerate(embeddings.record_ids):
@@ -266,6 +291,8 @@ def _cmd_run_dimred(args: argparse.Namespace) -> int:
             "embedding": embeddings.to_dict(),
             "projection": projection.to_dict(),
             "clustering": clustering,
+            "coverage": coverage,
+            "trajectory": trajectory,
         },
     )
     _write_csv(args.projection_csv, projection_rows)

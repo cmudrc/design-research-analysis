@@ -291,6 +291,21 @@ def test_cli_run_dimred_with_stubbed_backends(
         "cluster_projection",
         lambda *args, **kwargs: {"labels": [0, 1, 0], "method": "kmeans"},
     )
+    monkeypatch.setattr(
+        cli_module,
+        "compute_design_space_coverage",
+        lambda *args, **kwargs: {"pairwise_spread": {"mean": 0.42}},
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "compute_idea_space_trajectory",
+        lambda *args, **kwargs: {"groups": {"s1": {"path_length": 1.0}}},
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "compute_divergence_convergence",
+        lambda *args, **kwargs: {"groups": {"s1": {"dominant_direction": "diverging"}}},
+    )
 
     exit_code = main(
         [
@@ -307,6 +322,10 @@ def test_cli_run_dimred_with_stubbed_backends(
     assert exit_code == 0
     payload = json.loads(summary_json.read_text(encoding="utf-8"))
     _assert_envelope(payload, analysis="dimred", mode="pca")
+    assert payload["coverage"]["pairwise_spread"]["mean"] == 0.42
+    assert payload["trajectory"]["divergence_convergence"]["groups"]["s1"]["dominant_direction"] == (
+        "diverging"
+    )
     assert projection_csv.exists()
 
 
