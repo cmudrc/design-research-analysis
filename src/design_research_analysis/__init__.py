@@ -38,6 +38,8 @@ from .sequence import (
 )
 from .stats import (
     bootstrap_ci,
+    build_condition_metric_table,
+    compare_condition_pairs,
     compare_groups,
     estimate_sample_size,
     fit_mixed_effects,
@@ -70,9 +72,11 @@ __all__ = [
     "UnifiedTableValidationReport",
     "attach_provenance",
     "bootstrap_ci",
+    "build_condition_metric_table",
     "capture_run_context",
     "cluster_projection",
     "coerce_unified_table",
+    "compare_condition_pairs",
     "compare_groups",
     "compute_design_space_coverage",
     "compute_divergence_convergence",

@@ -6,12 +6,13 @@ import math
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from itertools import combinations
 from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
 from ._comparison import ComparableResultMixin
-from .table import coerce_unified_table
+from .table import UnifiedTableConfig, coerce_unified_table
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -26,6 +27,16 @@ _POWER_IMPORT_ERROR = (
 )
 _SUPPORTED_TESTS = {"one_sample_t", "paired_t", "two_sample_t"}
 _SUPPORTED_ALTERNATIVES = {"two-sided", "larger", "smaller"}
+_SUPPORTED_PERMUTATION_ALTERNATIVES = {"two-sided", "greater", "less"}
+_ANALYSIS_TABLE_CONFIG = UnifiedTableConfig(
+    required_columns=(),
+    recommended_columns=(),
+    optional_columns=(),
+    parse_timestamps=False,
+    sort_by_timestamp=False,
+)
+_DEFAULT_EXACT_PERMUTATION_THRESHOLD = 250_000
+_DEFAULT_SAMPLED_PERMUTATIONS = 20_000
 
 
 @dataclass(slots=True)
@@ -222,6 +233,130 @@ class MixedEffectsResult(ComparableResultMixin):
         )
 
 
+@dataclass(frozen=True, slots=True)
+class ConditionPairComparison:
+    """Structured result for one pairwise condition comparison."""
+
+    metric: str
+    left_condition: str
+    right_condition: str
+    mean_left: float
+    mean_right: float
+    n_left: int
+    n_right: int
+    mean_difference: float
+    effect_size: float
+    p_value: float
+    alternative: str
+    test_method: str
+    permutations_evaluated: int
+    total_permutations: int
+    higher_condition: str | None
+    significant: bool
+
+    @property
+    def pair_label(self) -> str:
+        """Return a stable display label for this pair."""
+        return f"{self.left_condition} vs {self.right_condition}"
+
+    @property
+    def test_name(self) -> str:
+        """Return the test label expected by reporting helpers."""
+        if self.test_method == "exact":
+            return "exact_permutation_test"
+        return "sampled_permutation_test"
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to a JSON-serializable dictionary."""
+        return {
+            "metric": self.metric,
+            "left_condition": self.left_condition,
+            "right_condition": self.right_condition,
+            "pair_label": self.pair_label,
+            "mean_left": float(self.mean_left),
+            "mean_right": float(self.mean_right),
+            "n_left": int(self.n_left),
+            "n_right": int(self.n_right),
+            "mean_difference": float(self.mean_difference),
+            "effect_size": float(self.effect_size),
+            "p_value": float(self.p_value),
+            "alternative": self.alternative,
+            "test_method": self.test_method,
+            "test_name": self.test_name,
+            "permutations_evaluated": int(self.permutations_evaluated),
+            "total_permutations": int(self.total_permutations),
+            "higher_condition": self.higher_condition,
+            "significant": bool(self.significant),
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class ConditionComparisonReport:
+    """Structured report for a set of pairwise condition comparisons."""
+
+    metric: str
+    condition_column: str
+    metric_column: str
+    alternative: str
+    alpha: float
+    comparisons: tuple[ConditionPairComparison, ...]
+    config: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to a JSON-serializable dictionary."""
+        return {
+            "metric": self.metric,
+            "condition_column": self.condition_column,
+            "metric_column": self.metric_column,
+            "alternative": self.alternative,
+            "alpha": float(self.alpha),
+            "comparisons": [comparison.to_dict() for comparison in self.comparisons],
+            "config": dict(self.config),
+        }
+
+    def to_significance_rows(self) -> list[dict[str, Any]]:
+        """Render comparison rows compatible with experiments reporting helpers."""
+        rows: list[dict[str, Any]] = []
+        for comparison in self.comparisons:
+            rows.append(
+                {
+                    "test": comparison.test_name,
+                    "outcome": f"{self.metric} ({comparison.pair_label})",
+                    "p_value": float(comparison.p_value),
+                    "effect_size": float(comparison.effect_size),
+                    "mean_difference": float(comparison.mean_difference),
+                    "higher_condition": comparison.higher_condition,
+                    "alternative": comparison.alternative,
+                    "test_method": comparison.test_method,
+                    "permutations_evaluated": int(comparison.permutations_evaluated),
+                    "total_permutations": int(comparison.total_permutations),
+                    "significant": bool(comparison.significant),
+                }
+            )
+        return rows
+
+    def render_brief(self) -> str:
+        """Render a concise markdown brief for the comparison set."""
+        lines = ["## Condition Comparison Brief"]
+        if not self.comparisons:
+            lines.append("- No condition comparisons were produced.")
+            return "\n".join(lines)
+
+        for comparison in self.comparisons:
+            significant = "yes" if comparison.significant else "no"
+            lines.append(
+                "- "
+                f"`{comparison.pair_label}` on `{self.metric}`: "
+                f"{comparison.left_condition} mean={comparison.mean_left:.4g}, "
+                f"{comparison.right_condition} mean={comparison.mean_right:.4g}, "
+                f"diff={comparison.mean_difference:+.4g}, "
+                f"d={comparison.effect_size:+.4g}, "
+                f"p={comparison.p_value:.4g} "
+                f"({comparison.test_method}, {comparison.alternative}, significant={significant})."
+            )
+        return "\n".join(lines)
+
+
 def _is_blank(value: Any) -> bool:
     return value is None or (isinstance(value, str) and value.strip() == "")
 
@@ -304,6 +439,163 @@ def _render_np_test_text(
         f"{test_name} returned p={p_value:.4g}, which is {decision} alpha={alpha:.3g}."
         f"{effect_txt} Use this with distribution checks and study context."
     )
+
+
+def _coerce_analysis_rows(data: Any, *, table_name: str) -> list[dict[str, Any]]:
+    try:
+        return coerce_unified_table(data, config=_ANALYSIS_TABLE_CONFIG)
+    except ValueError as exc:
+        raise ValueError(f"Failed to coerce {table_name}: {exc}") from exc
+
+
+def _unique_row_map(
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    key_column: str,
+    table_name: str,
+) -> dict[str, dict[str, Any]]:
+    resolved: dict[str, dict[str, Any]] = {}
+    for index, row in enumerate(rows):
+        raw_key = row.get(key_column)
+        if _is_blank(raw_key):
+            raise ValueError(f"{table_name} row {index} is missing '{key_column}'.")
+        key = str(raw_key)
+        if key in resolved:
+            raise ValueError(f"{table_name} contains duplicate '{key_column}' value {key!r}.")
+        resolved[key] = dict(row)
+    return resolved
+
+
+def _collect_rows_by_run_id(
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    run_id_column: str,
+    table_name: str,
+) -> dict[str, list[dict[str, Any]]]:
+    grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for index, row in enumerate(rows):
+        raw_run_id = row.get(run_id_column)
+        if _is_blank(raw_run_id):
+            raise ValueError(f"{table_name} row {index} is missing '{run_id_column}'.")
+        grouped[str(raw_run_id)].append(dict(row))
+    return dict(grouped)
+
+
+def _resolve_metric_label(
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    metric_name: str | None,
+    metric_label_column: str,
+    metric_column: str,
+) -> str:
+    if metric_name is not None and metric_name.strip():
+        return metric_name
+
+    labels = {
+        str(value)
+        for row in rows
+        if metric_label_column in row and not _is_blank(value := row.get(metric_label_column))
+    }
+    if len(labels) == 1:
+        return next(iter(labels))
+    if len(labels) > 1:
+        raise ValueError(
+            "Joined table contains multiple metric labels. "
+            "Provide metric_name explicitly or pre-filter the table."
+        )
+    return metric_column
+
+
+def _resolve_condition_pairs(
+    grouped_values: Mapping[str, Sequence[float]],
+    *,
+    condition_pairs: Sequence[tuple[str, str]] | None,
+) -> list[tuple[str, str]]:
+    known_conditions = sorted(grouped_values)
+    if condition_pairs is None:
+        return list(combinations(known_conditions, 2))
+
+    resolved_pairs: list[tuple[str, str]] = []
+    seen_pairs: set[tuple[str, str]] = set()
+    for index, pair in enumerate(condition_pairs):
+        if len(pair) != 2:
+            raise ValueError(f"condition_pairs[{index}] must contain exactly two condition labels.")
+        left, right = str(pair[0]), str(pair[1])
+        if left == right:
+            raise ValueError(f"condition_pairs[{index}] compares {left!r} against itself.")
+        if left not in grouped_values or right not in grouped_values:
+            raise ValueError(
+                f"condition_pairs[{index}] references unknown conditions: {(left, right)!r}."
+            )
+        normalized_pair = (left, right)
+        if normalized_pair in seen_pairs:
+            raise ValueError(f"condition_pairs[{index}] duplicates pair {normalized_pair!r}.")
+        seen_pairs.add(normalized_pair)
+        resolved_pairs.append(normalized_pair)
+    return resolved_pairs
+
+
+def _exact_permutation_summary(
+    x_arr: np.ndarray,
+    y_arr: np.ndarray,
+    *,
+    alternative: str,
+) -> dict[str, Any]:
+    pooled = np.concatenate([x_arr, y_arr])
+    observed = float(np.mean(x_arr) - np.mean(y_arr))
+    n_x = int(x_arr.size)
+    n_total = int(pooled.size)
+    total_permutations = math.comb(n_total, n_x)
+    pooled_sum = float(np.sum(pooled))
+    exceedances = 0
+
+    for left_indices in combinations(range(n_total), n_x):
+        left_sum = float(sum(float(pooled[index]) for index in left_indices))
+        right_sum = pooled_sum - left_sum
+        stat = (left_sum / n_x) - (right_sum / (n_total - n_x))
+        if alternative == "two-sided":
+            is_extreme = abs(stat) >= abs(observed) - 1e-12
+        elif alternative == "greater":
+            is_extreme = stat >= observed - 1e-12
+        else:
+            is_extreme = stat <= observed + 1e-12
+        if is_extreme:
+            exceedances += 1
+
+    return {
+        "p_value": float(exceedances / total_permutations),
+        "test_method": "exact",
+        "permutations_evaluated": int(total_permutations),
+        "total_permutations": int(total_permutations),
+    }
+
+
+def _pairwise_permutation_summary(
+    x_arr: np.ndarray,
+    y_arr: np.ndarray,
+    *,
+    alternative: str,
+    exact_threshold: int,
+    n_permutations: int,
+    seed: int,
+) -> dict[str, Any]:
+    total_permutations = math.comb(int(x_arr.size + y_arr.size), int(x_arr.size))
+    if total_permutations <= exact_threshold:
+        return _exact_permutation_summary(x_arr, y_arr, alternative=alternative)
+
+    sampled = permutation_test(
+        x_arr,
+        y_arr,
+        n_permutations=n_permutations,
+        alternative=alternative,
+        seed=seed,
+    )
+    return {
+        "p_value": float(sampled["p_value"]),
+        "test_method": "sampled",
+        "permutations_evaluated": int(n_permutations),
+        "total_permutations": int(total_permutations),
+    }
 
 
 def compare_groups(
@@ -647,7 +939,7 @@ def permutation_test(
     """Run a two-sample permutation test."""
     if n_permutations <= 0:
         raise ValueError("n_permutations must be positive.")
-    if alternative not in {"two-sided", "greater", "less"}:
+    if alternative not in _SUPPORTED_PERMUTATION_ALTERNATIVES:
         raise ValueError("alternative must be one of: two-sided, greater, less")
 
     x_arr = _as_array(x, "x")
@@ -681,6 +973,265 @@ def permutation_test(
             alternative=alternative,
         ),
     }
+
+
+def build_condition_metric_table(
+    runs: Any,
+    *,
+    metric: str,
+    condition_column: str = "condition",
+    evaluations: Any | None = None,
+    conditions: Any | None = None,
+    run_id_column: str = "run_id",
+    condition_id_column: str = "condition_id",
+    evaluation_metric_column: str = "metric_name",
+    evaluation_value_column: str = "metric_value",
+) -> list[dict[str, Any]]:
+    """Build a normalized run-level condition/metric table from experiment exports."""
+    run_rows = _coerce_analysis_rows(runs, table_name="runs table")
+    if not run_rows:
+        raise ValueError("runs table must contain at least one row.")
+
+    condition_rows = (
+        _coerce_analysis_rows(conditions, table_name="conditions table")
+        if conditions is not None
+        else []
+    )
+    evaluation_rows = (
+        _coerce_analysis_rows(evaluations, table_name="evaluations table")
+        if evaluations is not None
+        else []
+    )
+
+    condition_lookup = (
+        _unique_row_map(
+            condition_rows,
+            key_column=condition_id_column,
+            table_name="conditions table",
+        )
+        if condition_rows
+        else {}
+    )
+    evaluation_lookup = (
+        _collect_rows_by_run_id(
+            evaluation_rows,
+            run_id_column=run_id_column,
+            table_name="evaluations table",
+        )
+        if evaluation_rows
+        else {}
+    )
+
+    metric_in_runs = any(metric in row for row in run_rows)
+    condition_in_runs = any(condition_column in row for row in run_rows)
+    normalized: list[dict[str, Any]] = []
+
+    for index, row in enumerate(run_rows):
+        raw_run_id = row.get(run_id_column)
+        if _is_blank(raw_run_id):
+            raise ValueError(f"runs table row {index} is missing '{run_id_column}'.")
+        run_id = str(raw_run_id)
+
+        raw_condition_id = row.get(condition_id_column)
+        condition_id = "" if _is_blank(raw_condition_id) else str(raw_condition_id)
+
+        if condition_in_runs:
+            raw_condition = row.get(condition_column)
+            if _is_blank(raw_condition):
+                raise ValueError(
+                    "runs table row "
+                    f"{index} is missing direct condition column {condition_column!r}."
+                )
+            condition_value = str(raw_condition)
+            condition_source = "runs"
+        else:
+            if not condition_lookup:
+                raise ValueError(
+                    f"Condition column {condition_column!r} was not found in runs rows and no "
+                    "conditions table was provided."
+                )
+            if not condition_id:
+                raise ValueError(
+                    f"runs table row {index} is missing '{condition_id_column}' "
+                    "for conditions join."
+                )
+            condition_row = condition_lookup.get(condition_id)
+            if condition_row is None:
+                raise ValueError(
+                    f"runs table row {index} references unknown condition_id {condition_id!r}."
+                )
+            raw_condition = condition_row.get(condition_column)
+            if _is_blank(raw_condition):
+                raise ValueError(
+                    f"conditions row for condition_id {condition_id!r} is missing "
+                    f"{condition_column!r}."
+                )
+            condition_value = str(raw_condition)
+            condition_source = "conditions"
+
+        if metric_in_runs:
+            raw_value = row.get(metric)
+            if _is_blank(raw_value):
+                raise ValueError(f"runs table row {index} is missing metric column {metric!r}.")
+            metric_value = float(cast(float | int | str, raw_value))
+            metric_source = "runs"
+        else:
+            if not evaluation_lookup:
+                raise ValueError(
+                    f"Metric {metric!r} was not found in runs rows and no evaluations table "
+                    "was provided."
+                )
+            matching_rows = []
+            for evaluation_row in evaluation_lookup.get(run_id, []):
+                aggregation_level = evaluation_row.get("aggregation_level")
+                if not _is_blank(aggregation_level) and str(aggregation_level) != "run":
+                    continue
+                if str(evaluation_row.get(evaluation_metric_column, "")) == metric:
+                    matching_rows.append(evaluation_row)
+
+            if not matching_rows:
+                raise ValueError(
+                    f"No evaluation metric {metric!r} was found for run_id {run_id!r}."
+                )
+            if len(matching_rows) > 1:
+                raise ValueError(
+                    f"Multiple evaluation rows matched metric {metric!r} for run_id {run_id!r}."
+                )
+            raw_value = matching_rows[0].get(evaluation_value_column)
+            if _is_blank(raw_value):
+                raise ValueError(
+                    f"Evaluation metric {metric!r} for run_id {run_id!r} is missing "
+                    f"{evaluation_value_column!r}."
+                )
+            metric_value = float(cast(float | int | str, raw_value))
+            metric_source = "evaluations"
+
+        normalized.append(
+            {
+                "run_id": run_id,
+                "condition_id": condition_id,
+                "condition": condition_value,
+                "metric": metric,
+                "value": metric_value,
+                "condition_source": condition_source,
+                "metric_source": metric_source,
+            }
+        )
+
+    return normalized
+
+
+def compare_condition_pairs(
+    data: Any,
+    *,
+    condition_column: str = "condition",
+    metric_column: str = "value",
+    metric_name: str | None = None,
+    condition_pairs: Sequence[tuple[str, str]] | None = None,
+    alternative: str = "two-sided",
+    alpha: float = 0.05,
+    exact_threshold: int = _DEFAULT_EXACT_PERMUTATION_THRESHOLD,
+    n_permutations: int = _DEFAULT_SAMPLED_PERMUTATIONS,
+    seed: int = 0,
+) -> ConditionComparisonReport:
+    """Compare all or selected condition pairs on one numeric metric."""
+    if alternative not in _SUPPORTED_PERMUTATION_ALTERNATIVES:
+        raise ValueError("alternative must be one of: two-sided, greater, less")
+    if not (0.0 < alpha < 1.0):
+        raise ValueError("alpha must be in (0, 1).")
+    if exact_threshold <= 0:
+        raise ValueError("exact_threshold must be positive.")
+    if n_permutations <= 0:
+        raise ValueError("n_permutations must be positive.")
+
+    rows = _coerce_analysis_rows(data, table_name="comparison table")
+    if not rows:
+        raise ValueError("comparison table must contain at least one row.")
+
+    grouped_values: dict[str, list[float]] = defaultdict(list)
+    for index, row in enumerate(rows):
+        raw_condition = row.get(condition_column)
+        raw_value = row.get(metric_column)
+        if _is_blank(raw_condition):
+            raise ValueError(f"comparison table row {index} is missing '{condition_column}'.")
+        if _is_blank(raw_value):
+            raise ValueError(f"comparison table row {index} is missing '{metric_column}'.")
+        grouped_values[str(raw_condition)].append(float(cast(float | int | str, raw_value)))
+
+    if len(grouped_values) < 2:
+        raise ValueError("At least two conditions are required for pairwise comparison.")
+
+    resolved_metric = _resolve_metric_label(
+        rows,
+        metric_name=metric_name,
+        metric_label_column="metric",
+        metric_column=metric_column,
+    )
+    resolved_pairs = _resolve_condition_pairs(
+        grouped_values,
+        condition_pairs=condition_pairs,
+    )
+    if not resolved_pairs:
+        raise ValueError("No condition pairs were requested.")
+
+    comparisons: list[ConditionPairComparison] = []
+    for pair_index, (left_condition, right_condition) in enumerate(resolved_pairs):
+        left_arr = np.asarray(grouped_values[left_condition], dtype=float)
+        right_arr = np.asarray(grouped_values[right_condition], dtype=float)
+        mean_left = float(np.mean(left_arr))
+        mean_right = float(np.mean(right_arr))
+        mean_difference = mean_left - mean_right
+        effect_size = _cohen_d(left_arr, right_arr)
+        permutation_summary = _pairwise_permutation_summary(
+            left_arr,
+            right_arr,
+            alternative=alternative,
+            exact_threshold=exact_threshold,
+            n_permutations=n_permutations,
+            seed=seed + pair_index,
+        )
+        if math.isclose(mean_difference, 0.0, abs_tol=1e-12):
+            higher_condition = None
+        elif mean_difference > 0:
+            higher_condition = left_condition
+        else:
+            higher_condition = right_condition
+
+        comparisons.append(
+            ConditionPairComparison(
+                metric=resolved_metric,
+                left_condition=left_condition,
+                right_condition=right_condition,
+                mean_left=mean_left,
+                mean_right=mean_right,
+                n_left=int(left_arr.size),
+                n_right=int(right_arr.size),
+                mean_difference=mean_difference,
+                effect_size=effect_size,
+                p_value=float(permutation_summary["p_value"]),
+                alternative=alternative,
+                test_method=str(permutation_summary["test_method"]),
+                permutations_evaluated=int(permutation_summary["permutations_evaluated"]),
+                total_permutations=int(permutation_summary["total_permutations"]),
+                higher_condition=higher_condition,
+                significant=float(permutation_summary["p_value"]) < alpha,
+            )
+        )
+
+    return ConditionComparisonReport(
+        metric=resolved_metric,
+        condition_column=condition_column,
+        metric_column=metric_column,
+        alternative=alternative,
+        alpha=float(alpha),
+        comparisons=tuple(comparisons),
+        config={
+            "n_conditions": len(grouped_values),
+            "exact_threshold": int(exact_threshold),
+            "n_permutations": int(n_permutations),
+            "seed": int(seed),
+        },
+    )
 
 
 def rank_tests_one_stop(
@@ -998,10 +1549,14 @@ def minimum_detectable_effect(
 
 
 __all__ = [
+    "ConditionComparisonReport",
+    "ConditionPairComparison",
     "GroupComparisonResult",
     "MixedEffectsResult",
     "RegressionResult",
     "bootstrap_ci",
+    "build_condition_metric_table",
+    "compare_condition_pairs",
     "compare_groups",
     "estimate_sample_size",
     "fit_mixed_effects",

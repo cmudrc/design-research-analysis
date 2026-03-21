@@ -70,6 +70,7 @@ Full Catalog
    :maxdepth: 1
 
    basic_usage
+   condition_pair_significance
    dimred_pca
    idea_space_metrics
    lab_study_pipeline

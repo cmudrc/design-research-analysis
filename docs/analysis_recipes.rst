@@ -93,6 +93,36 @@ Statistics Recipe
    reg = fit_regression(X, y, feature_names=["x"])
    print(reg.coefficients, reg.intercept, reg.r2)
 
+Experiment Condition Comparison Recipe
+--------------------------------------
+
+.. code-block:: python
+
+   from design_research_analysis import (
+       build_condition_metric_table,
+       compare_condition_pairs,
+   )
+
+   condition_metric_rows = build_condition_metric_table(
+       runs_rows,
+       metric="market_share_proxy",
+       condition_column="selection_strategy",
+       conditions=conditions_rows,
+       evaluations=evaluations_rows,
+   )
+
+   report = compare_condition_pairs(
+       condition_metric_rows,
+       condition_pairs=[
+           ("profit_focus_prompt", "neutral_prompt"),
+           ("neutral_prompt", "random_selection"),
+       ],
+       alternative="greater",
+       seed=17,
+   )
+   print(report.render_brief())
+   print(report.to_significance_rows())
+
 Dataset And Provenance Recipe
 -----------------------------
 
