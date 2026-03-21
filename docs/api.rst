@@ -17,7 +17,8 @@ Top-level groups:
 - Language: ``compute_language_convergence``, ``compute_semantic_distance_trajectory``,
   ``fit_topic_model``, ``score_sentiment``
 - Dimensionality reduction: ``embed_records``, ``reduce_dimensions``,
-  ``cluster_projection``
+  ``cluster_projection``, ``compute_design_space_coverage``,
+  ``compute_idea_space_trajectory``, ``compute_divergence_convergence``
 - Statistics: ``compare_groups``, ``fit_regression``, ``fit_mixed_effects``,
   ``permutation_test``, ``bootstrap_ci``, ``rank_tests_one_stop``,
   ``estimate_sample_size``, ``power_curve``, ``minimum_detectable_effect``
