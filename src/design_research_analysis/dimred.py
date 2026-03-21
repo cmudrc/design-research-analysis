@@ -266,9 +266,7 @@ def _centroid_radius_summary(matrix: np.ndarray) -> dict[str, Any]:
 
 
 def _cross_2d(origin: tuple[float, float], a: tuple[float, float], b: tuple[float, float]) -> float:
-    return ((a[0] - origin[0]) * (b[1] - origin[1])) - (
-        (a[1] - origin[1]) * (b[0] - origin[0])
-    )
+    return ((a[0] - origin[0]) * (b[1] - origin[1])) - ((a[1] - origin[1]) * (b[0] - origin[0]))
 
 
 def _convex_hull_vertices(points: np.ndarray) -> list[tuple[float, float]]:
@@ -632,9 +630,7 @@ def compute_divergence_convergence(
             "effective_window": int(effective_window),
             "rolling_mean_centroid_distance": [float(value) for value in rolling],
             "phase_markers": phase_markers,
-            "divergence_score": (
-                float(np.mean(positive_deltas)) if positive_deltas else 0.0
-            ),
+            "divergence_score": (float(np.mean(positive_deltas)) if positive_deltas else 0.0),
             "convergence_rate": float(convergence_count / len(deltas)) if deltas else 0.0,
             "dominant_direction": dominant_direction,
         }
