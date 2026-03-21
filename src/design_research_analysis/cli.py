@@ -98,7 +98,9 @@ def _base_payload(*, analysis: str, mode: str) -> dict[str, Any]:
 
 
 def _rows_have_fields(rows: list[dict[str, Any]], *field_names: str) -> bool:
-    return bool(rows) and all(not _is_blank(row.get(field_name)) for row in rows for field_name in field_names)
+    return bool(rows) and all(
+        not _is_blank(row.get(field_name)) for row in rows for field_name in field_names
+    )
 
 
 def _is_blank(value: Any) -> bool:
