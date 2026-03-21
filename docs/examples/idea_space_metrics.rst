@@ -36,5 +36,5 @@ directory containing the generated PNG figures.
 References
 ----------
 
-- docs/workflows_dimred.rst
+- docs/workflows_embedding_maps.rst
 - docs/workflows_sequence.rst

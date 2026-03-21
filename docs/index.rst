@@ -7,7 +7,7 @@ What This Library Does
 ----------------------
 
 ``design-research-analysis`` supports sequence analysis, language analysis,
-dimensionality reduction, and statistical modeling over unified event-table
+embedding maps, and statistical modeling over unified event-table
 inputs. It is built for recurring research workflows where validation,
 provenance, and repeatability are first-order concerns.
 
@@ -42,7 +42,7 @@ Highlights
 - Dataset profiling, schema checks, and codebook generation
 - Sequence analysis for Markov chains and Hidden Markov Models
 - Language analysis for semantic convergence, topic discovery, and sentiment
-- Dimensionality reduction and clustering for embedding-space inspection
+- Embedding maps and clustering for embedding-space inspection
 - Statistical workflows for comparisons, regression, mixed effects, and power
 - Runtime provenance capture for reproducible study artifacts
 
@@ -52,7 +52,7 @@ Typical Workflow
 1. Start from a unified event table or an exported
    ``design-research-experiments`` ``events.csv`` artifact.
 2. Validate and, when needed, derive missing analysis columns.
-3. Run sequence, language, dimred, and/or statistical workflows.
+3. Run sequence, language, embedding-map, and/or statistical workflows.
 4. Persist JSON summaries, CSV exports, and provenance manifests.
 5. Rejoin findings to ``runs.csv`` and ``evaluations.csv`` for study context.
 

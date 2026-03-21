@@ -5,11 +5,12 @@ from datetime import datetime
 import numpy as np
 import pytest
 
-from design_research_analysis.dimred import (
+from design_research_analysis.embedding_maps import (
+    EmbeddingMapResult,
     EmbeddingResult,
-    ProjectionResult,
     _json_timestamp,
     _timestamp_sort_key,
+    build_embedding_map,
     compute_design_space_coverage,
     compute_divergence_convergence,
     compute_idea_space_trajectory,
@@ -17,9 +18,9 @@ from design_research_analysis.dimred import (
 )
 
 
-def test_compute_design_space_coverage_accepts_projection_results() -> None:
-    projection = ProjectionResult(
-        projection=np.asarray(
+def test_compute_design_space_coverage_accepts_embedding_map_results() -> None:
+    projection = EmbeddingMapResult(
+        coordinates=np.asarray(
             [
                 [0.0, 0.0],
                 [1.0, 0.0],
@@ -27,6 +28,7 @@ def test_compute_design_space_coverage_accepts_projection_results() -> None:
                 [0.0, 1.0],
             ]
         ),
+        record_ids=["r1", "r2", "r3", "r4"],
         method="pca",
         config={"n_components": 2},
     )
@@ -37,7 +39,7 @@ def test_compute_design_space_coverage_accepts_projection_results() -> None:
     assert coverage["pairwise_spread"]["n_pairs"] == 6
     assert coverage["convex_hull"]["supported"] is True
     assert coverage["convex_hull"]["area"] == pytest.approx(1.0)
-    assert coverage["config"]["input_source"] == "projection_result"
+    assert coverage["config"]["input_source"] == "embedding_map_result"
 
 
 def test_compute_design_space_coverage_handles_degenerate_cases() -> None:
@@ -85,6 +87,12 @@ def test_compute_design_space_coverage_handles_embedding_results_and_single_poin
     assert coverage["pairwise_spread"]["n_pairs"] == 0
     assert "fewer than two points" in coverage["warnings"][0]
     assert coverage["convex_hull"]["supported"] is False
+
+
+def test_build_embedding_map_exposes_projection_compatibility_property() -> None:
+    result = build_embedding_map(np.asarray([[0.0, 1.0], [1.0, 0.0]]), method="pca", n_components=2)
+
+    assert np.array_equal(result.projection, result.coordinates)
 
 
 def test_compute_design_space_coverage_rejects_nonfinite_values_and_unknown_methods() -> None:

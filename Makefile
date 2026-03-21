@@ -84,7 +84,7 @@ examples-test: check-python runtime-cache
 run-examples: examples-test
 
 examples-coverage: check-python
-	$(PYTHON) scripts/check_example_api_coverage.py --minimum 35
+	$(PYTHON) scripts/check_example_api_coverage.py --minimum 90
 
 examples-metrics: check-python runtime-cache examples-test
 	$(PYTHON) scripts/generate_examples_metrics.py

@@ -2,7 +2,7 @@
 
 ## Introduction
 Run a realistic small-sample lab workflow across control vs reframed conditions
-with sequence, language, dataset, dimensionality-reduction, statistical, and
+with sequence, language, dataset, embedding-map, statistical, and
 provenance outputs.
 
 ## Technical Implementation
@@ -10,8 +10,8 @@ provenance outputs.
 2. Validate table quality and compute sequence/language summaries.
 3. Profile and validate a dataframe schema; generate a codebook.
 4. Run group comparison, regression, bootstrap, permutation, and power helpers.
-5. Run PCA + clustering and write a reproducibility manifest with attached
-   provenance payload.
+5. Run PCA embedding-map clustering and write a reproducibility manifest with
+   attached provenance payload.
 
 ## Expected Results
 Prints concise summaries for state count, convergence labels, sentiment totals,
@@ -193,8 +193,8 @@ def main() -> None:
         ],
         dtype=float,
     )
-    projection = dran.reduce_dimensions(vectors, method="pca", n_components=2)
-    clusters = dran.cluster_projection(projection.projection, method="kmeans", n_clusters=2)
+    embedding_map = dran.build_embedding_map(vectors, method="pca", n_components=2)
+    clusters = dran.cluster_embedding_map(embedding_map, method="kmeans", n_clusters=2)
 
     context = dran.capture_run_context(seed=11)
     manifest_path = Path("artifacts/runtime/lab_study_manifest.json")

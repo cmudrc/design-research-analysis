@@ -20,7 +20,7 @@ entry points.
 3. Execute or inspect
 ---------------------
 
-Run sequence, language, dimred, and/or statistical workflows.
+Run sequence, language, embedding-map, and/or statistical workflows.
 
 4. Capture artifacts
 --------------------
@@ -37,7 +37,7 @@ Choosing Analysis Families
 --------------------------
 
 Sequence analysis is best when order and transitions matter. Language analysis
-is best when semantic change or discourse properties matter. Dimensionality
-reduction is best when embedding geometry and clustering structure matter.
+is best when semantic change or discourse properties matter. Embedding maps are
+best when embedding geometry, trajectories, and clustering structure matter.
 Statistical workflows are best when inferential claims and effect-size
 estimation matter.

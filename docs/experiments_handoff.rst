@@ -24,7 +24,7 @@ Canonical Input Files
 ---------------------
 
 - ``events.csv``: event-level analysis input for validation, sequence, language,
-  and dimred workflows.
+  and embedding-map workflows.
 - ``runs.csv``: run-level study context such as condition, model, seed, status,
   and outcome metadata.
 - ``evaluations.csv``: evaluator outputs keyed to a run, such as scores or
@@ -50,7 +50,7 @@ Then run one downstream analysis workflow on the same artifact input.
      --summary-json artifacts/sequence.json \
      --mode markov
 
-You can use the same validated ``events.csv`` input for language, dimred, and
+You can use the same validated ``events.csv`` input for language, embedding-map, and
 stats commands depending on the study question.
 
 Validation And Derivation In Python

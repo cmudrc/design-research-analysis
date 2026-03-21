@@ -6,18 +6,18 @@ import importlib.util
 import numpy as np
 import pytest
 
-import design_research_analysis.dimred as dimred_module
-from design_research_analysis.dimred import (
+import design_research_analysis.embedding_maps as maps_module
+from design_research_analysis.embedding_maps import (
+    EmbeddingMapResult,
     EmbeddingResult,
-    ProjectionResult,
     _kmeans,
-    cluster_projection,
+    build_embedding_map,
+    cluster_embedding_map,
     embed_records,
-    reduce_dimensions,
 )
 
 
-def test_embedding_and_projection_results_support_serialization_and_comparison() -> None:
+def test_embedding_and_map_results_support_serialization_and_comparison() -> None:
     left_embedding = EmbeddingResult(
         embeddings=np.asarray([[1.0, 2.0], [3.0, 4.0]]),
         record_ids=["r1", "r2"],
@@ -38,14 +38,16 @@ def test_embedding_and_projection_results_support_serialization_and_comparison()
     assert embedding_difference.metric == "embedding_profile"
     assert embedding_difference.details["left_record_ids"] == ["r1", "r2"]
 
-    left_projection = ProjectionResult(
-        projection=np.asarray([[0.1, 0.2], [0.3, 0.4]]),
+    left_projection = EmbeddingMapResult(
+        coordinates=np.asarray([[0.1, 0.2], [0.3, 0.4]]),
+        record_ids=["r1", "r2"],
         method="pca",
         config={"n_components": 2},
         explained_variance_ratio=[0.75, 0.25],
     )
-    right_projection = ProjectionResult(
-        projection=np.asarray([[0.1, 0.1], [0.3, 0.5]]),
+    right_projection = EmbeddingMapResult(
+        coordinates=np.asarray([[0.1, 0.1], [0.3, 0.5]]),
+        record_ids=["r1", "r2"],
         method="umap",
         config={"n_components": 2},
     )
@@ -54,7 +56,7 @@ def test_embedding_and_projection_results_support_serialization_and_comparison()
     projection_effect = left_projection / right_projection
 
     assert projection_payload["explained_variance_ratio"] == [0.75, 0.25]
-    assert projection_effect.metric == "projection_profile"
+    assert projection_effect.metric == "embedding_map_profile"
     assert projection_effect.details["methods"] == ["pca", "umap"]
 
 
@@ -123,7 +125,7 @@ def test_embed_records_builtin_provider_uses_embed_text(monkeypatch: pytest.Monk
         captured["device"] = device
         return np.asarray([[0.1, 0.2]])
 
-    monkeypatch.setattr(dimred_module, "embed_text", _fake_embed_text)
+    monkeypatch.setattr(maps_module, "embed_text", _fake_embed_text)
 
     result = embed_records(
         [{"timestamp": "2026-01-01T10:00:00Z", "text": "hello", "record_id": "r1"}],
@@ -143,17 +145,17 @@ def test_embed_records_builtin_provider_uses_embed_text(monkeypatch: pytest.Monk
     }
 
 
-def test_reduce_dimensions_validation_and_constant_pca_case() -> None:
+def test_build_embedding_map_validation_and_constant_pca_case() -> None:
     with pytest.raises(ValueError, match="2D matrix"):
-        reduce_dimensions(np.asarray([1.0, 2.0, 3.0]), method="pca")
+        build_embedding_map(np.asarray([1.0, 2.0, 3.0]), method="pca")
     with pytest.raises(ValueError, match="at least one row"):
-        reduce_dimensions(np.empty((0, 2)), method="pca")
+        build_embedding_map(np.empty((0, 2)), method="pca")
     with pytest.raises(ValueError, match="must be positive"):
-        reduce_dimensions(np.ones((2, 2)), method="pca", n_components=0)
+        build_embedding_map(np.ones((2, 2)), method="pca", n_components=0)
     with pytest.raises(ValueError, match="Unsupported method"):
-        reduce_dimensions(np.ones((2, 2)), method="bogus")
+        build_embedding_map(np.ones((2, 2)), method="bogus")
 
-    constant = reduce_dimensions(np.ones((3, 2)), method="pca", n_components=2)
+    constant = build_embedding_map(np.ones((3, 2)), method="pca", n_components=2)
     assert constant.explained_variance_ratio == [0.0, 0.0]
 
 
@@ -161,7 +163,7 @@ def test_reduce_dimensions_validation_and_constant_pca_case() -> None:
     importlib.util.find_spec("sklearn") is None,
     reason="sklearn unavailable",
 )
-def test_cluster_projection_agglomerative_and_kmeans_validation() -> None:
+def test_cluster_embedding_map_agglomerative_and_kmeans_validation() -> None:
     projection = np.asarray(
         [
             [0.0, 0.0],
@@ -171,18 +173,18 @@ def test_cluster_projection_agglomerative_and_kmeans_validation() -> None:
         ]
     )
 
-    agglomerative = cluster_projection(projection, method="agglomerative", n_clusters=2)
+    agglomerative = cluster_embedding_map(projection, method="agglomerative", n_clusters=2)
 
     assert agglomerative["method"] == "agglomerative"
     assert agglomerative["centers"] is None
     assert len(agglomerative["labels"]) == 4
 
     with pytest.raises(ValueError, match="2D matrix"):
-        cluster_projection(np.asarray([1.0, 2.0]), method="kmeans")
+        cluster_embedding_map(np.asarray([1.0, 2.0]), method="kmeans")
     with pytest.raises(ValueError, match="at least one row"):
-        cluster_projection(np.empty((0, 2)), method="kmeans")
+        cluster_embedding_map(np.empty((0, 2)), method="kmeans")
     with pytest.raises(ValueError, match="Unsupported method"):
-        cluster_projection(projection, method="bogus")
+        cluster_embedding_map(projection, method="bogus")
 
 
 def test_kmeans_validation_and_import_errors(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -207,8 +209,12 @@ def test_kmeans_validation_and_import_errors(monkeypatch: pytest.MonkeyPatch) ->
     monkeypatch.setattr(builtins, "__import__", _raising_import)
 
     with pytest.raises(ImportError, match="optional dependencies"):
-        reduce_dimensions(np.ones((4, 2)), method="tsne")
+        build_embedding_map(np.ones((4, 2)), method="tsne")
     with pytest.raises(ImportError, match="optional dependencies"):
-        reduce_dimensions(np.ones((4, 2)), method="umap")
+        build_embedding_map(np.ones((4, 2)), method="umap")
     with pytest.raises(ImportError, match="optional dependencies"):
-        cluster_projection(np.ones((4, 2)), method="agglomerative")
+        build_embedding_map(np.ones((4, 2)), method="pacmap")
+    with pytest.raises(ImportError, match="optional dependencies"):
+        build_embedding_map(np.ones((4, 2)), method="trimap")
+    with pytest.raises(ImportError, match="optional dependencies"):
+        cluster_embedding_map(np.ones((4, 2)), method="agglomerative")

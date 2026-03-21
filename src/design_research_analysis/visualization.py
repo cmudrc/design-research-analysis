@@ -11,7 +11,11 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
-from .dimred import ProjectionResult, _coerce_feature_matrix, compute_idea_space_trajectory
+from .embedding_maps import (
+    EmbeddingMapResult,
+    _coerce_feature_matrix,
+    compute_idea_space_trajectory,
+)
 from .table import coerce_unified_table
 
 
@@ -153,7 +157,7 @@ def plot_design_process_timeline(
 
 
 def plot_idea_trajectory(
-    projection: Sequence[Sequence[float]] | np.ndarray | ProjectionResult,
+    projection: Sequence[Sequence[float]] | np.ndarray | EmbeddingMapResult,
     *,
     groups: Sequence[Any] | None = None,
     timestamps: Sequence[Any] | None = None,

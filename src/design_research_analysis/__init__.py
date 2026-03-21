@@ -1,15 +1,20 @@
 """Curated public exports for design-research-analysis."""
 
-from . import dataset, dimred, language, runtime, sequence, stats, visualization
+from . import dataset, embedding_maps, language, runtime, sequence, stats, visualization
 from ._comparison import ComparisonResult
 from .dataset import generate_codebook, profile_dataframe, validate_dataframe
-from .dimred import (
-    cluster_projection,
+from .embedding_maps import (
+    EmbeddingMapResult,
+    EmbeddingResult,
+    build_embedding_map,
+    cluster_embedding_map,
+    compare_embedding_maps,
     compute_design_space_coverage,
     compute_divergence_convergence,
     compute_idea_space_trajectory,
     embed_records,
-    reduce_dimensions,
+    plot_embedding_map,
+    plot_embedding_map_grid,
 )
 from .language import (
     compute_language_convergence,
@@ -66,6 +71,8 @@ __all__ = [
     "ComparisonResult",
     "DecodeResult",
     "DiscreteHMMResult",
+    "EmbeddingMapResult",
+    "EmbeddingResult",
     "GaussianHMMResult",
     "MarkovChainResult",
     "UnifiedTableConfig",
@@ -73,10 +80,12 @@ __all__ = [
     "attach_provenance",
     "bootstrap_ci",
     "build_condition_metric_table",
+    "build_embedding_map",
     "capture_run_context",
-    "cluster_projection",
+    "cluster_embedding_map",
     "coerce_unified_table",
     "compare_condition_pairs",
+    "compare_embedding_maps",
     "compare_groups",
     "compute_design_space_coverage",
     "compute_divergence_convergence",
@@ -86,8 +95,8 @@ __all__ = [
     "dataset",
     "decode_hmm",
     "derive_columns",
-    "dimred",
     "embed_records",
+    "embedding_maps",
     "estimate_sample_size",
     "fit_discrete_hmm_from_table",
     "fit_markov_chain_from_table",
@@ -103,13 +112,14 @@ __all__ = [
     "permutation_test",
     "plot_convergence_curve",
     "plot_design_process_timeline",
+    "plot_embedding_map",
+    "plot_embedding_map_grid",
     "plot_idea_trajectory",
     "plot_state_graph",
     "plot_transition_matrix",
     "power_curve",
     "profile_dataframe",
     "rank_tests_one_stop",
-    "reduce_dimensions",
     "runtime",
     "score_sentiment",
     "sequence",
