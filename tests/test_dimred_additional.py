@@ -198,7 +198,11 @@ def test_kmeans_validation_and_import_errors(monkeypatch: pytest.MonkeyPatch) ->
     original_import = builtins.__import__
 
     def _raising_import(name: str, *args: object, **kwargs: object) -> object:
+        if name == "pacmap":
+            raise ImportError("blocked")
         if name == "umap":
+            raise ImportError("blocked")
+        if name == "trimap":
             raise ImportError("blocked")
         if name == "sklearn.manifold":
             raise ImportError("blocked")
