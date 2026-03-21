@@ -1,6 +1,6 @@
 """Curated public exports for design-research-analysis."""
 
-from . import dataset, dimred, language, runtime, sequence, stats
+from . import dataset, dimred, language, runtime, sequence, stats, visualization
 from ._comparison import ComparisonResult
 from .dataset import generate_codebook, profile_dataframe, validate_dataframe
 from .dimred import (
@@ -54,6 +54,11 @@ from .table import (
     derive_columns,
     validate_unified_table,
 )
+from .visualization import (
+    plot_convergence_curve,
+    plot_design_process_timeline,
+    plot_idea_trajectory,
+)
 
 __all__ = [
     "ComparisonResult",
@@ -92,6 +97,9 @@ __all__ = [
     "language",
     "minimum_detectable_effect",
     "permutation_test",
+    "plot_convergence_curve",
+    "plot_design_process_timeline",
+    "plot_idea_trajectory",
     "plot_state_graph",
     "plot_transition_matrix",
     "power_curve",
@@ -104,5 +112,6 @@ __all__ = [
     "stats",
     "validate_dataframe",
     "validate_unified_table",
+    "visualization",
     "write_run_manifest",
 ]

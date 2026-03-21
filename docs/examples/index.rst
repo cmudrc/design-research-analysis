@@ -45,6 +45,15 @@ Project and cluster embeddings for structure inspection.
 **Runtime:** short
 **Teaches:** projection choices, clustering interpretation, geometry-aware summaries
 
+Idea Space Metrics
+~~~~~~~~~~~~~~~~~~
+
+Compute idea-space coverage and trajectory summaries, then render the main plots.
+
+**Requires:** base install
+**Runtime:** short
+**Teaches:** coverage metrics, divergence diagnostics, and top-level visualization helpers
+
 Stats Regression
 ~~~~~~~~~~~~~~~~
 
@@ -62,6 +71,7 @@ Full Catalog
 
    basic_usage
    dimred_pca
+   idea_space_metrics
    lab_study_pipeline
    language_custom_embedder
    sequence_from_table

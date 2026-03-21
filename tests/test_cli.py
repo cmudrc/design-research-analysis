@@ -323,9 +323,9 @@ def test_cli_run_dimred_with_stubbed_backends(
     payload = json.loads(summary_json.read_text(encoding="utf-8"))
     _assert_envelope(payload, analysis="dimred", mode="pca")
     assert payload["coverage"]["pairwise_spread"]["mean"] == 0.42
-    assert payload["trajectory"]["divergence_convergence"]["groups"]["s1"]["dominant_direction"] == (
-        "diverging"
-    )
+    assert payload["trajectory"]["divergence_convergence"]["groups"]["s1"][
+        "dominant_direction"
+    ] == ("diverging")
     assert projection_csv.exists()
 
 

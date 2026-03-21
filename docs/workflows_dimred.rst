@@ -20,6 +20,8 @@ Key API Entry Points
 - :func:`design_research_analysis.compute_design_space_coverage`
 - :func:`design_research_analysis.compute_idea_space_trajectory`
 - :func:`design_research_analysis.compute_divergence_convergence`
+- :func:`design_research_analysis.plot_idea_trajectory`
+- :func:`design_research_analysis.plot_convergence_curve`
 
 Projection-Space Diagnostics
 ----------------------------
@@ -43,3 +45,19 @@ CLI Path
 The dimred summary JSON includes projection-space clustering, coverage, and
 trajectory diagnostics. When ``session_id`` and ``timestamp`` are present, the
 trajectory block is grouped and ordered from those unified-table columns.
+
+Visualization Examples
+----------------------
+
+Idea trajectories and convergence curves are useful once the numeric metrics
+suggest an interpretable motion through the projected space.
+
+.. image:: _static/idea_space_metrics/idea_trajectory.png
+   :alt: Example 2D idea trajectory with marked start and end points.
+   :width: 95%
+   :align: center
+
+.. image:: _static/idea_space_metrics/convergence_curve.png
+   :alt: Example convergence curve over centroid distance across idea steps.
+   :width: 85%
+   :align: center

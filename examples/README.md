@@ -11,6 +11,7 @@ docstring via ``scripts/generate_example_docs.py``.
 - `sequence_from_table.py`: fit a Markov chain from event-coded session traces.
 - `language_custom_embedder.py`: run convergence analysis with deterministic in-house embeddings.
 - `dimred_pca.py`: PCA projection and k-means clustering over study-level vectors.
+- `idea_space_metrics.py`: projection-space coverage, trajectory diagnostics, and plotting helpers.
 - `stats_regression.py`: novelty-vs-iteration regression for prototype runs.
 - `lab_study_pipeline.py`: prompt-framing experiment pipeline with table checks, language/sequence/stats, and provenance manifest output.
 
