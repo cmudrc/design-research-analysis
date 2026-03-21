@@ -23,6 +23,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
+    "sphinx_copybutton",
 ]
 
 napoleon_google_docstring = True
@@ -33,10 +34,7 @@ autodoc_typehints = "none"
 autosummary_generate = True
 autosummary_imported_members = True
 nitpicky = True
-nitpick_ignore_target = "design_research_analysis._comparison.ComparableResultMixin"
-nitpick_ignore = [
-    ("py:class", nitpick_ignore_target),
-]
+nitpick_ignore = [("py:class", "design_research_analysis._comparison.ComparableResultMixin")]
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
 }
