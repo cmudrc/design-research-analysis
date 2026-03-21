@@ -13,6 +13,7 @@ docstring via ``scripts/generate_example_docs.py``.
 - `dimred_pca.py`: PCA projection and k-means clustering over study-level vectors.
 - `idea_space_metrics.py`: projection-space coverage, trajectory diagnostics, and plotting helpers.
 - `stats_regression.py`: novelty-vs-iteration regression for prototype runs.
+- `condition_pair_significance.py`: join canonical experiment exports into run-level metrics and render pairwise significance summaries.
 - `lab_study_pipeline.py`: prompt-framing experiment pipeline with table checks, language/sequence/stats, and provenance manifest output.
 
 All examples use the import convention:
