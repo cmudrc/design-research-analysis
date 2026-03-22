@@ -34,6 +34,25 @@ This package centers on reproducible analysis workflows with a small top-level A
 Requires Python 3.12+.
 Maintainer workflows target Python `3.12` (`.python-version`).
 
+Install from PyPI:
+
+```bash
+python -m pip install --upgrade pip
+pip install design-research-analysis
+```
+
+Common install profiles:
+
+```bash
+pip install "design-research-analysis[seq]"
+pip install "design-research-analysis[lang,embeddings]"
+pip install "design-research-analysis[maps]"
+pip install "design-research-analysis[stats,data]"
+pip install "design-research-analysis[all]"
+```
+
+For contributor workflows:
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate
@@ -81,6 +100,7 @@ The supported public surface is whatever is exported from `design_research_analy
 
 Top-level exports include:
 
+- Package metadata: `__version__`
 - Table contracts: `UnifiedTableConfig`, `UnifiedTableValidationReport`, `coerce_unified_table`, `derive_columns`, `validate_unified_table`
 - Sequence: `fit_markov_chain_from_table`, `fit_discrete_hmm_from_table`, `fit_text_gaussian_hmm_from_table`, `decode_hmm`, plotting helpers, and result types
 - Language: `compute_language_convergence`, `compute_semantic_distance_trajectory`, `fit_topic_model`, `score_sentiment`

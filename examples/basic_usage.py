@@ -25,6 +25,8 @@ import design_research_analysis as dran
 
 def main() -> None:
     """Run a lightweight unified-table analysis workflow."""
+    print("Package version:", dran.__version__)
+
     rows = [
         {
             "timestamp": "2026-01-01T10:00:00Z",

@@ -21,6 +21,7 @@ def test_public_exports_match_the_curated_api() -> None:
         "MarkovChainResult",
         "UnifiedTableConfig",
         "UnifiedTableValidationReport",
+        "__version__",
         "attach_provenance",
         "bootstrap_ci",
         "build_condition_metric_table",
@@ -73,6 +74,8 @@ def test_public_exports_match_the_curated_api() -> None:
         "visualization",
         "write_run_manifest",
     ]
+    assert isinstance(package.__version__, str)
+    assert package.__version__
 
 
 def test_dimred_compatibility_wrappers_delegate(monkeypatch: pytest.MonkeyPatch) -> None:

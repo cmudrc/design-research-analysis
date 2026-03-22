@@ -9,6 +9,7 @@ This example shows the shortest meaningful path through
 
 .. code-block:: bash
 
+   python -m pip install --upgrade pip
    pip install design-research-analysis
 
 Or install from source:
@@ -20,7 +21,16 @@ Or install from source:
    python -m venv .venv
    source .venv/bin/activate
    python -m pip install --upgrade pip
-   pip install -e .
+   pip install .
+
+Install extras when you need optional analysis families:
+
+.. code-block:: bash
+
+   pip install "design-research-analysis[seq]"
+   pip install "design-research-analysis[lang,embeddings]"
+   pip install "design-research-analysis[maps]"
+   pip install "design-research-analysis[stats,data]"
 
 2. Minimal Runnable Example
 ---------------------------

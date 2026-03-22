@@ -34,7 +34,7 @@ merging.
 - Pre-merge baseline:
   - `make ci`
 - Pre-publish baseline:
-  - `make release-check`
+  - `make release-check` (builds artifacts, validates metadata, and smoke-installs the wheel)
 
 ## Public Vs Private Boundaries
 

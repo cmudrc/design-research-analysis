@@ -2,6 +2,7 @@
 
 from . import dataset, embedding_maps, language, runtime, sequence, stats, visualization
 from ._comparison import ComparisonResult
+from ._version import __version__
 from .dataset import generate_codebook, profile_dataframe, validate_dataframe
 from .embedding_maps import (
     EmbeddingMapResult,
@@ -77,6 +78,7 @@ __all__ = [
     "MarkovChainResult",
     "UnifiedTableConfig",
     "UnifiedTableValidationReport",
+    "__version__",
     "attach_provenance",
     "bootstrap_ci",
     "build_condition_metric_table",

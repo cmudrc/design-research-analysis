@@ -6,6 +6,7 @@ Core Install
 
 .. code-block:: bash
 
+   python -m pip install --upgrade pip
    pip install design-research-analysis
 
 Editable contributor setup:
@@ -62,10 +63,13 @@ when building a full local research environment.
 
 Recommended install profiles:
 
-- sequence-focused studies: ``pip install -e ".[seq]"``
-- language + embedding studies: ``pip install -e ".[lang,embeddings]"``
-- embedding-map studies: ``pip install -e ".[maps]"``
-- inference-heavy studies: ``pip install -e ".[stats,data]"``
-- broad analysis workstation setup: ``pip install -e ".[all]"``
+- sequence-focused studies: ``pip install "design-research-analysis[seq]"``
+- language + embedding studies: ``pip install "design-research-analysis[lang,embeddings]"``
+- embedding-map studies: ``pip install "design-research-analysis[maps]"``
+- inference-heavy studies: ``pip install "design-research-analysis[stats,data]"``
+- broad analysis workstation setup: ``pip install "design-research-analysis[all]"``
+
+If you are working from a local checkout instead of PyPI, replace
+``design-research-analysis`` with ``.`` to install the same extras in editable mode.
 
 Release packaging validation is exposed via ``make release-check``.

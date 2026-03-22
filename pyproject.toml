@@ -16,10 +16,12 @@ keywords = ["analysis", "design-research", "hmm", "markov", "sequence"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.12",
   "Operating System :: OS Independent",
+  "Topic :: Scientific/Engineering",
   "Topic :: Software Development :: Libraries :: Python Modules",
   "Typing :: Typed",
 ]

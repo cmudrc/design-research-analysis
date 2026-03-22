@@ -32,6 +32,7 @@ help:
 	@echo "  examples-coverage Check public API coverage across examples."
 	@echo "  examples-metrics Generate example and public-API badge artifacts."
 	@echo "  docs             Build the HTML docs."
+	@echo "  release-check    Build artifacts, validate metadata, and smoke-install the wheel."
 	@echo "  ci               Run the main local CI checks."
 
 check-python:
@@ -107,6 +108,11 @@ release-check: check-python
 	rm -rf build dist
 	$(BUILD)
 	$(TWINE) check dist/*
+	$(PYTHON) scripts/check_release_install.py \
+		--package-name design-research-analysis \
+		--import-name design_research_analysis \
+		--cli design-research-analysis \
+		--required-attr validate_unified_table
 
 ci: qa coverage docstrings-check docs-check run-examples examples-coverage release-check
 

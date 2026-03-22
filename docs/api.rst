@@ -6,6 +6,7 @@ This page documents the supported top-level public API from
 
 Top-level groups:
 
+- Package metadata: ``__version__``
 - Comparison: ``ComparisonResult``
 - Module facades: ``dataset``, ``embedding_maps``, ``language``, ``runtime``,
   ``sequence``, ``stats``, ``visualization``

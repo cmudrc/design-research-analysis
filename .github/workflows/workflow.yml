@@ -59,16 +59,17 @@ jobs:
           python-version: "3.12"
           cache: pip
 
-      # Build source and wheel distributions, then sanity-check them.
-      #
-      # - build: produces dist/*.tar.gz (sdist) and dist/*.whl (wheel)
-      # - twine check: validates metadata and long_description rendering markers
-      #   (catches common README/metadata packaging issues early).
-      - name: Build distribution artifacts
+      # Install the local release-check tooling. This provides:
+      # - build + twine validation
+      # - a clean temporary-venv wheel smoke test
+      # - the same release gate contributors use locally before pushing to PyPI
+      - name: Install release tooling
         run: |
-          python -m pip install --upgrade pip build twine
-          python -m build
-          python -m twine check dist/*
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Build distribution artifacts
+        run: make release-check
 
       # Publish to PyPI using OIDC (trusted publishing).
       #
