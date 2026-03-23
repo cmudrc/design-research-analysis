@@ -123,7 +123,7 @@ def test_load_experiment_artifacts_requires_canonical_siblings(tmp_path: Path) -
     _write_canonical_artifacts(output_dir)
     (output_dir / "runs.csv").unlink()
 
-    with pytest.raises(ValueError, match="runs.csv"):
+    with pytest.raises(ValueError, match=r"runs\.csv"):
         load_experiment_artifacts(output_dir)
 
 

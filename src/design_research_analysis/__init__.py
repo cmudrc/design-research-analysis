@@ -1,6 +1,15 @@
 """Curated public exports for design-research-analysis."""
 
-from . import dataset, embedding_maps, integration, language, runtime, sequence, stats, visualization
+from . import (
+    dataset,
+    embedding_maps,
+    integration,
+    language,
+    runtime,
+    sequence,
+    stats,
+    visualization,
+)
 from ._comparison import ComparisonResult
 from ._version import __version__
 from .dataset import generate_codebook, profile_dataframe, validate_dataframe

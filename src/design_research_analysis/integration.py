@@ -82,10 +82,7 @@ def _resolve_output_dir(path: str | Path) -> Path:
 def _resolve_events_path(path: str | Path) -> Path:
     """Resolve the canonical ``events.csv`` path from a directory or file input."""
     candidate = Path(path).expanduser()
-    if candidate.is_dir():
-        events_path = candidate / "events.csv"
-    else:
-        events_path = candidate
+    events_path = candidate / "events.csv" if candidate.is_dir() else candidate
 
     if not events_path.is_file() or events_path.name != "events.csv":
         raise ValueError(
