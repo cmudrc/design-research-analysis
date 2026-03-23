@@ -8,8 +8,8 @@ Top-level groups:
 
 - Package metadata: ``__version__``
 - Comparison: ``ComparisonResult``
-- Module facades: ``dataset``, ``embedding_maps``, ``language``, ``runtime``,
-  ``sequence``, ``stats``, ``visualization``
+- Module facades: ``dataset``, ``embedding_maps``, ``integration``, ``language``,
+  ``runtime``, ``sequence``, ``stats``, ``visualization``
 - Unified table contracts: ``UnifiedTableConfig``, ``UnifiedTableValidationReport``,
   ``coerce_unified_table``, ``derive_columns``, ``validate_unified_table``
 - Sequence: ``MarkovChainResult``, ``DiscreteHMMResult``, ``GaussianHMMResult``,

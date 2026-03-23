@@ -1,6 +1,6 @@
 """Curated public exports for design-research-analysis."""
 
-from . import dataset, embedding_maps, language, runtime, sequence, stats, visualization
+from . import dataset, embedding_maps, integration, language, runtime, sequence, stats, visualization
 from ._comparison import ComparisonResult
 from ._version import __version__
 from .dataset import generate_codebook, profile_dataframe, validate_dataframe
@@ -107,6 +107,7 @@ __all__ = [
     "fit_text_gaussian_hmm_from_table",
     "fit_topic_model",
     "generate_codebook",
+    "integration",
     "is_google_colab",
     "is_notebook",
     "language",

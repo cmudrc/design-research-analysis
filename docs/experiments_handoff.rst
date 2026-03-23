@@ -17,8 +17,8 @@ For background on the study-side workflow, see the
 `design-research-experiments typical workflow <https://cmudrc.github.io/design-research-experiments/typical_workflow.html>`_
 and
 `reference overview <https://cmudrc.github.io/design-research-experiments/reference/index.html>`_.
-The current canonical export contract is implemented in
-`design_research_experiments.artifacts <https://github.com/cmudrc/design-research-experiments/blob/main/src/design_research_experiments/artifacts.py>`_.
+For the canonical export contract itself, see the
+`design-research-experiments artifact contract <https://cmudrc.github.io/design-research-experiments/artifact_contract.html>`_.
 
 Canonical Input Files
 ---------------------
@@ -58,23 +58,18 @@ Validation And Derivation In Python
 
 .. code-block:: python
 
-   from design_research_analysis import (
-       derive_columns,
-       fit_markov_chain_from_table,
-       validate_unified_table,
+   from design_research_analysis import fit_markov_chain_from_table
+   from design_research_analysis.integration import (
+       load_experiment_artifacts,
+       validate_experiment_events,
    )
 
-   rows = derive_columns(
-       events_rows,
-       actor_mapper=lambda row: row.get("actor_id") or "agent",
-       event_mapper=lambda row: row.get("event_type") or "event",
-   )
-
-   report = validate_unified_table(rows)
+   artifacts = load_experiment_artifacts("study-output")
+   report = validate_experiment_events("study-output/events.csv")
    if not report.is_valid:
        raise RuntimeError("; ".join(report.errors))
 
-   result = fit_markov_chain_from_table(rows)
+   result = fit_markov_chain_from_table(artifacts["events.csv"])
    print(result.states)
 
 Column Expectations In The Export Handoff

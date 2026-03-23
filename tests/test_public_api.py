@@ -50,6 +50,7 @@ def test_public_exports_match_the_curated_api() -> None:
         "fit_text_gaussian_hmm_from_table",
         "fit_topic_model",
         "generate_codebook",
+        "integration",
         "is_google_colab",
         "is_notebook",
         "language",
