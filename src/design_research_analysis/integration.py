@@ -37,9 +37,7 @@ def load_experiment_artifacts(path: str | Path) -> dict[str, Any]:
         if not (output_dir / artifact_name).exists()
     ]
     if missing:
-        raise ValueError(
-            "Missing canonical experiment artifacts: " + ", ".join(missing) + "."
-        )
+        raise ValueError("Missing canonical experiment artifacts: " + ", ".join(missing) + ".")
 
     return {
         "manifest.json": _read_json(output_dir / "manifest.json"),
