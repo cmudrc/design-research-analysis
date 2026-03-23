@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import json
 import re
+from os import PathLike
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, NotRequired, TypedDict
 
 if TYPE_CHECKING:
@@ -11,6 +14,9 @@ if TYPE_CHECKING:
 _DATA_IMPORT_ERROR = (
     "Dataset profiling requires optional dependencies. "
     "Install with `pip install design-research-analysis[data]`."
+)
+_DATASET_INPUT_ERROR = (
+    "Unsupported dataset input format. Use a pandas DataFrame or a .csv, .tsv, or .json path."
 )
 
 _ALLOWED_SCHEMA_KEYS = {"dtype", "required", "nullable", "unique", "min", "max", "allowed", "regex"}
@@ -39,6 +45,32 @@ def _load_pandas() -> tuple[Any, Any]:
     except ImportError as exc:
         raise ImportError(_DATA_IMPORT_ERROR) from exc
     return pd, pd_types
+
+
+def _coerce_dataframe_input(data: Any, *, pd_module: Any) -> Any:
+    if isinstance(data, pd_module.DataFrame):
+        return data
+
+    if isinstance(data, (str, PathLike)):
+        input_path = Path(data)
+        suffix = input_path.suffix.lower()
+        if suffix in {".csv", ".tsv"}:
+            delimiter = "," if suffix == ".csv" else "\t"
+            return pd_module.read_csv(input_path, sep=delimiter)
+
+        if suffix == ".json":
+            payload = json.loads(input_path.read_text(encoding="utf-8"))
+            if isinstance(payload, list):
+                if payload and not all(isinstance(item, dict) for item in payload):
+                    raise ValueError("JSON row input must be a list of objects.")
+                return pd_module.DataFrame(payload)
+            if isinstance(payload, dict):
+                return pd_module.DataFrame(payload)
+            raise ValueError("JSON input must be a list of objects or a columnar object.")
+
+        raise ValueError(_DATASET_INPUT_ERROR)
+
+    raise TypeError("Dataset input must be a pandas DataFrame or a .csv, .tsv, or .json path.")
 
 
 def _infer_dtype(series: Any, *, pd_module: Any, pd_types: Any) -> str:
@@ -88,14 +120,19 @@ def _numeric_summary(series: Any, *, pd_module: Any) -> dict[str, Any]:
     }
 
 
-def profile_dataframe(df: pd.DataFrame, *, max_categorical_levels: int = 20) -> dict[str, Any]:
-    """Profile a DataFrame without mutating inputs."""
+def profile_dataframe(
+    df: pd.DataFrame | str | PathLike[str],
+    *,
+    max_categorical_levels: int = 20,
+) -> dict[str, Any]:
+    """Profile a DataFrame or supported dataset file without mutating inputs."""
     pd_module, pd_types = _load_pandas()
+    frame = _coerce_dataframe_input(df, pd_module=pd_module)
     warnings: list[str] = []
     column_summaries: dict[str, dict[str, Any]] = {}
 
-    for column_name in df.columns:
-        series = df[column_name]
+    for column_name in frame.columns:
+        series = frame[column_name]
         inferred_dtype = _infer_dtype(series, pd_module=pd_module, pd_types=pd_types)
         nonnull = series.dropna()
         n_unique = int(nonnull.nunique(dropna=True))
@@ -118,8 +155,8 @@ def profile_dataframe(df: pd.DataFrame, *, max_categorical_levels: int = 20) -> 
         column_summaries[column_name] = summary
 
     return {
-        "n_rows": len(df),
-        "n_columns": len(df.columns),
+        "n_rows": len(frame),
+        "n_columns": len(frame.columns),
         "columns": column_summaries,
         "warnings": warnings,
     }
@@ -141,9 +178,13 @@ def _matches_declared_dtype(series: Any, *, dtype_name: str, pd_module: Any, pd_
     return False
 
 
-def validate_dataframe(df: pd.DataFrame, schema: dict[str, Any]) -> dict[str, Any]:
-    """Validate a DataFrame against a declarative per-column schema."""
+def validate_dataframe(
+    df: pd.DataFrame | str | PathLike[str],
+    schema: dict[str, Any],
+) -> dict[str, Any]:
+    """Validate a DataFrame or supported dataset file against a declarative schema."""
     pd_module, pd_types = _load_pandas()
+    frame = _coerce_dataframe_input(df, pd_module=pd_module)
     errors: list[str] = []
     warnings: list[str] = []
     checked_columns: list[str] = []
@@ -159,14 +200,14 @@ def validate_dataframe(df: pd.DataFrame, schema: dict[str, Any]) -> dict[str, An
             errors.append(f"Column '{column_name}' uses unsupported schema key '{key}'.")
 
         required = bool(raw_rules.get("required", True))
-        if column_name not in df.columns:
+        if column_name not in frame.columns:
             if required:
                 errors.append(f"Required column '{column_name}' is missing.")
                 missing_columns.append(column_name)
             continue
 
         checked_columns.append(column_name)
-        series = df[column_name]
+        series = frame[column_name]
         nonnull = series.dropna()
 
         declared_dtype = raw_rules.get("dtype")
@@ -231,7 +272,7 @@ def validate_dataframe(df: pd.DataFrame, schema: dict[str, Any]) -> dict[str, An
                 if not matches.all():
                     errors.append(f"Column '{column_name}' has values that fail regex validation.")
 
-    unexpected_columns = [column for column in df.columns if column not in schema]
+    unexpected_columns = [column for column in frame.columns if column not in schema]
     for column_name in unexpected_columns:
         warnings.append(f"Column '{column_name}' is not described by the schema.")
 
@@ -248,17 +289,18 @@ def validate_dataframe(df: pd.DataFrame, schema: dict[str, Any]) -> dict[str, An
 
 
 def generate_codebook(
-    df: pd.DataFrame,
+    df: pd.DataFrame | str | PathLike[str],
     *,
     descriptions: dict[str, str] | None = None,
 ) -> pd.DataFrame:
-    """Generate a compact codebook DataFrame in source column order."""
+    """Generate a compact codebook from a DataFrame or supported dataset file."""
     pd_module, pd_types = _load_pandas()
+    frame = _coerce_dataframe_input(df, pd_module=pd_module)
     rows: list[dict[str, Any]] = []
     description_lookup = descriptions or {}
 
-    for column_name in df.columns:
-        series = df[column_name]
+    for column_name in frame.columns:
+        series = frame[column_name]
         nonnull = series.dropna()
         rows.append(
             {

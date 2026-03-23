@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import csv
+import json
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from os import PathLike
+from pathlib import Path
 from typing import Any
 
 Row = dict[str, Any]
@@ -132,7 +136,24 @@ def _columnar_to_rows(data: Mapping[str, Sequence[Any]]) -> list[Row]:
     return rows
 
 
+def _load_rows_from_path(path_input: str | PathLike[str]) -> list[Row]:
+    path = Path(path_input)
+    suffix = path.suffix.lower()
+    if suffix == ".json":
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        return _rows_from_data(payload)
+    if suffix in {".csv", ".tsv"}:
+        delimiter = "," if suffix == ".csv" else "\t"
+        with path.open("r", encoding="utf-8", newline="") as handle:
+            reader = csv.DictReader(handle, delimiter=delimiter)
+            return [dict(row) for row in reader]
+    raise ValueError("Unsupported table input path. Use .csv, .tsv, or .json.")
+
+
 def _rows_from_data(data: Any) -> list[Row]:
+    if isinstance(data, (str, PathLike)):
+        return _load_rows_from_path(data)
+
     if isinstance(data, Mapping):
         if data and all(
             isinstance(value, Sequence) and not isinstance(value, (str, bytes))
@@ -179,7 +200,8 @@ def coerce_unified_table(
     """Coerce input data to normalized row-oriented unified table records.
 
     Args:
-        data: Row-oriented sequence of mappings or column-oriented mapping.
+        data: Row-oriented sequence of mappings, column-oriented mapping, or a
+            ``.csv``, ``.tsv``, or ``.json`` path.
         config: Optional table configuration.
 
     Returns:
@@ -230,21 +252,21 @@ def coerce_unified_table(
 
 
 def validate_unified_table(
-    table: Sequence[Mapping[str, Any]],
+    table: Any,
     *,
     config: UnifiedTableConfig | None = None,
 ) -> UnifiedTableValidationReport:
     """Validate a unified table against the configured contract.
 
     Args:
-        table: Coerced unified table rows.
+        table: Coerced unified table rows or a supported path-like input.
         config: Optional table configuration.
 
     Returns:
         Validation report with errors and warnings.
     """
     resolved_config = config or UnifiedTableConfig()
-    rows = [dict(row) for row in table]
+    rows = [dict(row) for row in _rows_from_data(table)]
     columns = _stable_columns(rows)
     column_set = set(columns)
 

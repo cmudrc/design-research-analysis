@@ -34,6 +34,16 @@ def test_profile_dataframe_warns_on_high_cardinality() -> None:
     assert profile["warnings"]
 
 
+def test_profile_dataframe_accepts_csv_path(tmp_path) -> None:
+    csv_path = tmp_path / "dataset.csv"
+    pd.DataFrame({"score": [1, 2], "group": ["a", "b"]}).to_csv(csv_path, index=False)
+
+    profile = profile_dataframe(csv_path)
+
+    assert profile["n_rows"] == 2
+    assert set(profile["columns"]) == {"score", "group"}
+
+
 def test_validate_dataframe_reports_errors_and_warnings() -> None:
     df = pd.DataFrame({"participant_id": [1, 1], "extra": [0, 1]})
     schema = {
@@ -70,6 +80,15 @@ def test_validate_dataframe_rule_variants() -> None:
         "when": {"dtype": "datetime", "min": pd.Timestamp("2026-01-01")},
     }
     result = validate_dataframe(df, schema)
+    assert result["ok"] is True
+
+
+def test_validate_dataframe_accepts_json_path(tmp_path) -> None:
+    json_path = tmp_path / "dataset.json"
+    json_path.write_text('[{"participant_id": 1}, {"participant_id": 2}]', encoding="utf-8")
+
+    result = validate_dataframe(json_path, {"participant_id": {"unique": True, "nullable": False}})
+
     assert result["ok"] is True
 
 
@@ -115,3 +134,12 @@ def test_generate_codebook_preserves_order_and_descriptions() -> None:
     ]
     assert codebook.loc[1, "description"] == "Condition label"
     assert codebook.loc[0, "description"] == ""
+
+
+def test_generate_codebook_accepts_csv_path(tmp_path) -> None:
+    csv_path = tmp_path / "codebook.csv"
+    pd.DataFrame({"first": [1, 2], "second": ["x", "y"]}).to_csv(csv_path, index=False)
+
+    codebook = generate_codebook(csv_path)
+
+    assert list(codebook["column"]) == ["first", "second"]
