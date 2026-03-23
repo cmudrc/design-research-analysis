@@ -58,6 +58,17 @@ Install extras when you need optional analysis families:
    result = fit_markov_chain_from_table(rows)
    print(result.states)
 
+You can also point the API at exported files directly when that is more
+convenient:
+
+.. code-block:: python
+
+   from design_research_analysis import coerce_unified_table, profile_dataframe
+
+   rows = coerce_unified_table("data/events.csv")
+   profile = profile_dataframe("data/events.csv")
+   print(len(rows), profile["n_columns"])
+
 3. What Happened
 ----------------
 

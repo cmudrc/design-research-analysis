@@ -29,6 +29,16 @@ def test_validate_unified_table_accepts_loose_minimal_rows() -> None:
     assert rows[0]["timestamp"].tzinfo == UTC
 
 
+def test_validate_unified_table_accepts_csv_path(tmp_path) -> None:
+    input_csv = tmp_path / "events.csv"
+    input_csv.write_text("timestamp,text\n2026-01-01T10:00:00Z,hello\n", encoding="utf-8")
+
+    report = validate_unified_table(input_csv)
+
+    assert report.is_valid is True
+    assert report.n_rows == 1
+
+
 def test_derive_columns_uses_mappers_for_blank_values() -> None:
     source = [
         {"timestamp": "2026-01-01T10:00:00Z", "text": "hi", "actor_id": "", "event_type": None},

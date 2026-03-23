@@ -80,6 +80,9 @@ design-research-analysis run-embedding-maps --input data/events.csv --summary-js
 design-research-analysis run-stats --input data/events.csv --summary-json artifacts/stats.json --mode regression --x-columns x1,x2 --y-column y
 ```
 
+The Python API can start from files too at the main ingestion points, for example
+`coerce_unified_table("data/events.csv")` and `profile_dataframe("data/events.csv")`.
+
 ## Examples
 
 Start with [examples/README.md](https://github.com/cmudrc/design-research-analysis/blob/main/examples/README.md) for runnable scripts across all analysis families.

@@ -12,7 +12,14 @@ from typing import Any, cast
 
 import numpy as np
 
-from .dataset import generate_codebook, profile_dataframe, validate_dataframe
+from .dataset import (
+    _DATASET_INPUT_ERROR,
+    _coerce_dataframe_input,
+    _load_pandas,
+    generate_codebook,
+    profile_dataframe,
+    validate_dataframe,
+)
 from .embedding_maps import (
     EmbeddingMapResult,
     cluster_embedding_map,
@@ -36,24 +43,15 @@ from .stats import compare_groups, fit_mixed_effects, fit_regression
 from .table import UnifiedTableConfig, coerce_unified_table, validate_unified_table
 
 _OUTPUT_SCHEMA_VERSION = "1.0"
-_DATA_IMPORT_ERROR = (
-    "Dataset CLI commands require optional data dependencies. "
-    "Install with `pip install design-research-analysis[data]`."
-)
 
 
 def _load_table(path: str) -> list[dict[str, Any]]:
-    input_path = Path(path)
-    suffix = input_path.suffix.lower()
-    if suffix == ".json":
-        payload = json.loads(input_path.read_text(encoding="utf-8"))
-        return coerce_unified_table(payload)
-    if suffix in {".csv", ".tsv"}:
-        delimiter = "," if suffix == ".csv" else "\t"
-        with input_path.open("r", encoding="utf-8", newline="") as handle:
-            reader = csv.DictReader(handle, delimiter=delimiter)
-            return coerce_unified_table(list(reader))
-    raise ValueError("Unsupported input format. Use .csv, .tsv, or .json.")
+    try:
+        return coerce_unified_table(path)
+    except ValueError as exc:
+        if str(exc) == "Unsupported table input path. Use .csv, .tsv, or .json.":
+            raise ValueError("Unsupported input format. Use .csv, .tsv, or .json.") from exc
+        raise
 
 
 def _serialize_for_json(value: Any) -> Any:
@@ -243,29 +241,13 @@ def _load_mapper(spec: str | None) -> Any:
 
 
 def _load_dataframe(path: str) -> Any:
-    input_path = Path(path)
-    suffix = input_path.suffix.lower()
-
+    pd_module, _ = _load_pandas()
     try:
-        import pandas as pd
-    except ImportError as exc:
-        raise ImportError(_DATA_IMPORT_ERROR) from exc
-
-    if suffix in {".csv", ".tsv"}:
-        delimiter = "," if suffix == ".csv" else "\t"
-        return pd.read_csv(input_path, sep=delimiter)
-
-    if suffix == ".json":
-        payload = json.loads(input_path.read_text(encoding="utf-8"))
-        if isinstance(payload, list):
-            if payload and not all(isinstance(item, dict) for item in payload):
-                raise ValueError("JSON row input must be a list of objects.")
-            return pd.DataFrame(payload)
-        if isinstance(payload, dict):
-            return pd.DataFrame(payload)
-        raise ValueError("JSON input must be a list of objects or a columnar object.")
-
-    raise ValueError("Unsupported dataset input format. Use .csv, .tsv, or .json.")
+        return _coerce_dataframe_input(path, pd_module=pd_module)
+    except ValueError as exc:
+        if str(exc) == _DATASET_INPUT_ERROR:
+            raise ValueError("Unsupported dataset input format. Use .csv, .tsv, or .json.") from exc
+        raise
 
 
 def _parse_json_object(raw_json: str, *, label: str) -> dict[str, Any]:
