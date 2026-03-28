@@ -64,3 +64,34 @@ def test_embed_text_surfaces_optional_dependency_error(monkeypatch) -> None:
 def test_embed_text_rejects_empty_input() -> None:
     with pytest.raises(ValueError, match="must contain at least one item"):
         embed_text([])
+
+
+def test_embed_text_rejects_nonpositive_batch_size() -> None:
+    with pytest.raises(ValueError, match="batch_size must be positive"):
+        embed_text(["alpha"], batch_size=0)
+
+
+class _BadShapeSentenceTransformer:
+    def __init__(self, model_name: str, device: str | None = None) -> None:
+        self.model_name = model_name
+        self.device = device
+
+    def encode(
+        self,
+        texts: list[str],
+        *,
+        batch_size: int,
+        show_progress_bar: bool,
+        normalize_embeddings: bool,
+        convert_to_numpy: bool,
+    ) -> np.ndarray:
+        del texts, batch_size, show_progress_bar, normalize_embeddings, convert_to_numpy
+        return np.asarray([1.0, 2.0, 3.0])
+
+
+def test_embed_text_requires_2d_matrix_output(monkeypatch) -> None:
+    fake_module = SimpleNamespace(SentenceTransformer=_BadShapeSentenceTransformer)
+    monkeypatch.setitem(sys.modules, "sentence_transformers", fake_module)
+
+    with pytest.raises(ValueError, match="2D matrix"):
+        embed_text(["alpha"], device="cpu")

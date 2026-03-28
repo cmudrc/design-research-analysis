@@ -127,6 +127,24 @@ def test_load_experiment_artifacts_requires_canonical_siblings(tmp_path: Path) -
         load_experiment_artifacts(output_dir)
 
 
+def test_load_experiment_artifacts_rejects_noncanonical_input_path(tmp_path: Path) -> None:
+    bad_path = tmp_path / "study-output" / "notes.csv"
+    bad_path.parent.mkdir(parents=True, exist_ok=True)
+    bad_path.write_text("not canonical", encoding="utf-8")
+
+    with pytest.raises(ValueError, match=r"events\.csv"):
+        load_experiment_artifacts(bad_path)
+
+
+def test_load_experiment_artifacts_requires_json_object_manifest(tmp_path: Path) -> None:
+    output_dir = tmp_path / "study-output"
+    _write_canonical_artifacts(output_dir)
+    (output_dir / "manifest.json").write_text("[]", encoding="utf-8")
+
+    with pytest.raises(ValueError, match=r"manifest\.json"):
+        load_experiment_artifacts(output_dir)
+
+
 def test_validate_experiment_events_uses_unified_table_validation(tmp_path: Path) -> None:
     output_dir = tmp_path / "study-output"
     _write_canonical_artifacts(output_dir)
@@ -135,3 +153,11 @@ def test_validate_experiment_events_uses_unified_table_validation(tmp_path: Path
 
     assert report.is_valid is True
     assert report.n_rows == 1
+
+
+def test_validate_experiment_events_requires_canonical_events_path(tmp_path: Path) -> None:
+    output_dir = tmp_path / "study-output"
+    _write_canonical_artifacts(output_dir)
+
+    with pytest.raises(ValueError, match=r"events\.csv"):
+        validate_experiment_events(output_dir / "runs.csv")
