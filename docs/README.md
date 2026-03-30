@@ -30,6 +30,12 @@ Prefer compact tables for scanning. Preserve nuance in narrative paragraphs dire
 
 Use `:doc:` for internal links and explicitly connect analysis outputs to experiments/agents/problems contexts when relevant.
 
+## Branding
+
+- The ecosystem figure is the source of truth for package colors.
+- This repo's canonical docs brand color is `#4D8687`.
+- Keep docs CSS tokens, `drc-light.png`, `drc-dark.png`, and `favicon.ico` aligned when updating docs styling.
+
 ## API Page Updates
 
 When public exports change, update:
