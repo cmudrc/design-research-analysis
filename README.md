@@ -7,9 +7,9 @@
 
 <!-- release-callout:start -->
 > [!IMPORTANT]
-> Current monthly release: [Allegheny Analysis - April 2026](https://github.com/cmudrc/design-research-analysis/milestone/1)  
-> Due: April 1, 2026  
-> Tracks: March 2026 work
+> Current monthly release: [Mellon Metrics - May 2026](https://github.com/cmudrc/design-research-analysis/milestone/2)  
+> Due: May 1, 2026  
+> Tracks: April 2026 work
 <!-- release-callout:end -->
 
 `design-research-analysis` is the unified-table analysis layer in the cmudrc design research ecosystem.
