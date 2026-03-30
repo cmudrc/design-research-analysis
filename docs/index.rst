@@ -15,25 +15,27 @@ Unified-table validation and column derivation are core features, not
 pre-processing footnotes. They make downstream analyses composable,
 reproducible, and easier to compare across studies.
 
-.. raw:: html
+.. container:: drc-home-badges
 
-   <div class="drc-badge-row">
-     <a class="drc-badge-link" href="https://github.com/cmudrc/design-research-analysis/actions/workflows/ci.yml">
-       <img alt="CI" src="https://github.com/cmudrc/design-research-analysis/actions/workflows/ci.yml/badge.svg">
-     </a>
-     <a class="drc-badge-link" href="https://github.com/cmudrc/design-research-analysis/actions/workflows/ci.yml">
-       <img alt="Coverage" src="https://raw.githubusercontent.com/cmudrc/design-research-analysis/main/.github/badges/coverage.svg">
-     </a>
-     <a class="drc-badge-link" href="https://github.com/cmudrc/design-research-analysis/actions/workflows/examples.yml">
-       <img alt="Examples Passing" src="https://raw.githubusercontent.com/cmudrc/design-research-analysis/main/.github/badges/examples-passing.svg">
-     </a>
-     <a class="drc-badge-link" href="https://github.com/cmudrc/design-research-analysis/actions/workflows/examples.yml">
-       <img alt="Public API In Examples" src="https://raw.githubusercontent.com/cmudrc/design-research-analysis/main/.github/badges/examples-api-coverage.svg">
-     </a>
-     <a class="drc-badge-link" href="https://github.com/cmudrc/design-research-analysis/actions/workflows/docs-pages.yml">
-       <img alt="Docs" src="https://github.com/cmudrc/design-research-analysis/actions/workflows/docs-pages.yml/badge.svg">
-     </a>
-   </div>
+   .. raw:: html
+
+      <div class="drc-badge-row">
+        <a class="drc-badge-link" href="https://github.com/cmudrc/design-research-analysis/actions/workflows/ci.yml">
+          <img alt="CI" src="https://github.com/cmudrc/design-research-analysis/actions/workflows/ci.yml/badge.svg">
+        </a>
+        <a class="drc-badge-link" href="https://github.com/cmudrc/design-research-analysis/actions/workflows/ci.yml">
+          <img alt="Coverage" src="https://raw.githubusercontent.com/cmudrc/design-research-analysis/main/.github/badges/coverage.svg">
+        </a>
+        <a class="drc-badge-link" href="https://github.com/cmudrc/design-research-analysis/actions/workflows/examples.yml">
+          <img alt="Examples Passing" src="https://raw.githubusercontent.com/cmudrc/design-research-analysis/main/.github/badges/examples-passing.svg">
+        </a>
+        <a class="drc-badge-link" href="https://github.com/cmudrc/design-research-analysis/actions/workflows/examples.yml">
+          <img alt="Public API In Examples" src="https://raw.githubusercontent.com/cmudrc/design-research-analysis/main/.github/badges/examples-api-coverage.svg">
+        </a>
+        <a class="drc-badge-link" href="https://github.com/cmudrc/design-research-analysis/actions/workflows/docs-pages.yml">
+          <img alt="Docs" src="https://github.com/cmudrc/design-research-analysis/actions/workflows/docs-pages.yml/badge.svg">
+        </a>
+      </div>
 
 Highlights
 ----------
@@ -56,11 +58,13 @@ Typical Workflow
 4. Persist JSON summaries, CSV exports, and provenance manifests.
 5. Rejoin findings to ``runs.csv`` and ``evaluations.csv`` for study context.
 
-.. note::
+.. container:: drc-home-callout
 
-   **Start with** :doc:`quickstart` for the shortest runnable path, or
-   :doc:`experiments_handoff` if you already have ``events.csv`` from
-   ``design-research-experiments``.
+   .. note::
+
+      **Start with** :doc:`quickstart` for the shortest runnable path, or
+      :doc:`experiments_handoff` if you already have ``events.csv`` from
+      ``design-research-experiments``.
 
 Integration With The Ecosystem
 ------------------------------
@@ -76,10 +80,13 @@ studying human and AI design behavior.
 Together these libraries support end-to-end design research pipelines, from
 study design through execution and interpretation.
 
-.. image:: _static/ecosystem-platform.svg
-   :alt: Ecosystem diagram showing experiments above agents, problems, and analysis.
-   :width: 100%
-   :align: center
+.. container:: drc-home-ecosystem
+
+   .. image:: _static/ecosystem-platform.svg
+      :alt: Ecosystem diagram showing experiments above agents, problems, and analysis.
+      :class: dark-light drc-ecosystem-figure
+      :width: 100%
+      :align: center
 
 Start Here
 ----------
