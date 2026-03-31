@@ -66,6 +66,38 @@ Typical Workflow
       :doc:`experiments_handoff` if you already have ``events.csv`` from
       ``design-research-experiments``.
 
+Guides
+------
+
+Learn the table model, setup flow, and repeatable analysis patterns that shape
+a stable downstream research pipeline.
+
+- :doc:`quickstart`
+- :doc:`installation`
+- :doc:`concepts`
+- :doc:`experiments_handoff`
+- :doc:`typical_workflow`
+- :doc:`workflows`
+- :doc:`analysis_recipes`
+- :doc:`unified_table_schema`
+
+Examples
+--------
+
+Browse runnable examples covering the major analysis surfaces.
+
+- :doc:`examples/index`
+
+Reference
+---------
+
+Look up the stable import surface, CLI behavior, and dependency guidance for
+repeatable analysis environments.
+
+- :doc:`api`
+- :doc:`cli_reference`
+- :doc:`dependencies_and_extras`
+
 Integration With The Ecosystem
 ------------------------------
 
@@ -102,31 +134,37 @@ Start Here
 
 .. toctree::
    :maxdepth: 2
-   :caption: Documentation
+   :caption: Guides
    :hidden:
 
    quickstart
    installation
    concepts
-   typical_workflow
-   examples/index
-   api
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Development
-   :hidden:
-
-   dependencies_and_extras
-   Contributing <https://github.com/cmudrc/design-research-analysis/blob/main/CONTRIBUTING.md>
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Additional Guides
-   :hidden:
-
    experiments_handoff
+   typical_workflow
    workflows
    analysis_recipes
    unified_table_schema
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Examples
+   :hidden:
+
+   examples/index
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Reference
+   :hidden:
+
+   api
    cli_reference
+   dependencies_and_extras
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Development
+   :hidden:
+
+   Contributing <https://github.com/cmudrc/design-research-analysis/blob/main/CONTRIBUTING.md>
