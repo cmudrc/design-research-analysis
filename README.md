@@ -1,8 +1,8 @@
 # design-research-analysis
 [![CI](https://github.com/cmudrc/design-research-analysis/actions/workflows/ci.yml/badge.svg)](https://github.com/cmudrc/design-research-analysis/actions/workflows/ci.yml)
-[![Coverage](https://raw.githubusercontent.com/cmudrc/design-research-analysis/main/.github/badges/coverage.svg)](https://github.com/cmudrc/design-research-analysis/actions/workflows/ci.yml)
-[![Examples Passing](https://raw.githubusercontent.com/cmudrc/design-research-analysis/main/.github/badges/examples-passing.svg)](https://github.com/cmudrc/design-research-analysis/actions/workflows/examples.yml)
-[![Public API In Examples](https://raw.githubusercontent.com/cmudrc/design-research-analysis/main/.github/badges/examples-api-coverage.svg)](https://github.com/cmudrc/design-research-analysis/actions/workflows/examples.yml)
+[![Coverage](https://raw.githubusercontent.com/cmudrc/design-research-analysis/HEAD/.github/badges/coverage.svg)](https://github.com/cmudrc/design-research-analysis/actions/workflows/ci.yml)
+[![Examples Passing](https://raw.githubusercontent.com/cmudrc/design-research-analysis/HEAD/.github/badges/examples-passing.svg)](https://github.com/cmudrc/design-research-analysis/actions/workflows/examples.yml)
+[![Public API In Examples](https://raw.githubusercontent.com/cmudrc/design-research-analysis/HEAD/.github/badges/examples-api-coverage.svg)](https://github.com/cmudrc/design-research-analysis/actions/workflows/examples.yml)
 [![Docs](https://github.com/cmudrc/design-research-analysis/actions/workflows/docs-pages.yml/badge.svg)](https://github.com/cmudrc/design-research-analysis/actions/workflows/docs-pages.yml)
 
 <!-- release-callout:start -->
@@ -85,7 +85,7 @@ The Python API can start from files too at the main ingestion points, for exampl
 
 ## Examples
 
-Start with [examples/README.md](https://github.com/cmudrc/design-research-analysis/blob/main/examples/README.md) for runnable scripts across all analysis families.
+Start with [examples/README.md](https://github.com/cmudrc/design-research-analysis/blob/HEAD/examples/README.md) for runnable scripts across all analysis families.
 
 ## Docs
 
@@ -113,4 +113,4 @@ Top-level exports include:
 
 ## Contributing
 
-Contribution workflow and validation gates are documented in [CONTRIBUTING.md](https://github.com/cmudrc/design-research-analysis/blob/main/CONTRIBUTING.md).
+Contribution workflow and validation gates are documented in [CONTRIBUTING.md](https://github.com/cmudrc/design-research-analysis/blob/HEAD/CONTRIBUTING.md).

@@ -24,13 +24,13 @@ reproducible, and easier to compare across studies.
           <img alt="CI" src="https://github.com/cmudrc/design-research-analysis/actions/workflows/ci.yml/badge.svg">
         </a>
         <a class="drc-badge-link" href="https://github.com/cmudrc/design-research-analysis/actions/workflows/ci.yml">
-          <img alt="Coverage" src="https://raw.githubusercontent.com/cmudrc/design-research-analysis/main/.github/badges/coverage.svg">
+          <img alt="Coverage" src="https://raw.githubusercontent.com/cmudrc/design-research-analysis/HEAD/.github/badges/coverage.svg">
         </a>
         <a class="drc-badge-link" href="https://github.com/cmudrc/design-research-analysis/actions/workflows/examples.yml">
-          <img alt="Examples Passing" src="https://raw.githubusercontent.com/cmudrc/design-research-analysis/main/.github/badges/examples-passing.svg">
+          <img alt="Examples Passing" src="https://raw.githubusercontent.com/cmudrc/design-research-analysis/HEAD/.github/badges/examples-passing.svg">
         </a>
         <a class="drc-badge-link" href="https://github.com/cmudrc/design-research-analysis/actions/workflows/examples.yml">
-          <img alt="Public API In Examples" src="https://raw.githubusercontent.com/cmudrc/design-research-analysis/main/.github/badges/examples-api-coverage.svg">
+          <img alt="Public API In Examples" src="https://raw.githubusercontent.com/cmudrc/design-research-analysis/HEAD/.github/badges/examples-api-coverage.svg">
         </a>
         <a class="drc-badge-link" href="https://github.com/cmudrc/design-research-analysis/actions/workflows/docs-pages.yml">
           <img alt="Docs" src="https://github.com/cmudrc/design-research-analysis/actions/workflows/docs-pages.yml/badge.svg">
@@ -130,7 +130,7 @@ Start Here
 - :doc:`typical_workflow`
 - :doc:`examples/index`
 - :doc:`api`
-- `CONTRIBUTING.md <https://github.com/cmudrc/design-research-analysis/blob/main/CONTRIBUTING.md>`_
+- `CONTRIBUTING.md <https://github.com/cmudrc/design-research-analysis/blob/HEAD/CONTRIBUTING.md>`_
 
 .. toctree::
    :maxdepth: 2
@@ -167,4 +167,4 @@ Start Here
    :caption: Development
    :hidden:
 
-   Contributing <https://github.com/cmudrc/design-research-analysis/blob/main/CONTRIBUTING.md>
+   Contributing <https://github.com/cmudrc/design-research-analysis/blob/HEAD/CONTRIBUTING.md>
