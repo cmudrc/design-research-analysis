@@ -97,6 +97,7 @@ repeatable analysis environments.
 - :doc:`api`
 - :doc:`cli_reference`
 - :doc:`dependencies_and_extras`
+- :doc:`automation_baseline`
 
 Integration With The Ecosystem
 ------------------------------
@@ -130,6 +131,7 @@ Start Here
 - :doc:`typical_workflow`
 - :doc:`examples/index`
 - :doc:`api`
+- :doc:`automation_baseline`
 - `CONTRIBUTING.md <https://github.com/cmudrc/design-research-analysis/blob/HEAD/CONTRIBUTING.md>`_
 
 .. toctree::
@@ -161,6 +163,7 @@ Start Here
    api
    cli_reference
    dependencies_and_extras
+   automation_baseline
 
 .. toctree::
    :maxdepth: 1

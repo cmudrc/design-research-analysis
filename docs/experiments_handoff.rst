@@ -20,6 +20,11 @@ and
 For the canonical export contract itself, see the
 `design-research-experiments artifact contract <https://cmudrc.github.io/design-research-experiments/artifact_contract.html>`_.
 
+The stable handoff unit is the exported study-output directory. In practice,
+``events.csv`` is the first file to validate and analyze, while ``runs.csv``
+and ``evaluations.csv`` are the files you rejoin later when you need study
+context and outcome metadata around the event stream.
+
 Canonical Input Files
 ---------------------
 
@@ -53,6 +58,19 @@ Then run one downstream analysis workflow on the same artifact input.
 You can use the same validated ``events.csv`` input for language, embedding-map, and
 stats commands depending on the study question.
 
+If you prefer to load the whole export directory first, use the integration
+helpers and treat ``events.csv`` as the analysis entry point inside that
+artifact bundle:
+
+.. code-block:: python
+
+   from design_research_analysis.integration import load_experiment_artifacts
+
+   artifacts = load_experiment_artifacts("study-output")
+   print(sorted(artifacts))
+   rows = artifacts["events.csv"]
+   print(len(rows))
+
 Validation And Derivation In Python
 -----------------------------------
 
@@ -74,6 +92,9 @@ Validation And Derivation In Python
 
 Column Expectations In The Export Handoff
 -----------------------------------------
+
+These expectations are the downstream-facing slice of the
+`artifact contract <https://cmudrc.github.io/design-research-experiments/artifact_contract.html>`_.
 
 Required for unified-table validation:
 
@@ -98,6 +119,14 @@ Derived-column guidance:
 - Derive ``event_type`` when raw observations need normalization into a shared
   event vocabulary.
 - Derive ``record_id`` when upstream events are otherwise stable but unlabeled.
+
+Treat these groups differently in maintainer docs and downstream code:
+
+- Required columns gate whether the table is valid enough to proceed at all.
+- Strongly recommended columns keep the exported events useful across sequence,
+  language, embedding, and statistics workflows without custom preprocessing.
+- Derived columns are the sanctioned fallback when upstream traces are stable
+  but still need normalization into the shared analysis vocabulary.
 
 Rejoin Study Context
 --------------------
