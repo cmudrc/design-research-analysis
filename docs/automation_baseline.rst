@@ -5,9 +5,9 @@ This page documents the shared docs and CI baseline for
 ``design-research-analysis``.
 
 The analysis repo now matches the common module-repo posture: public docs stay
-in sync with README and examples, example health is reported explicitly, and
-release-facing surfaces are maintained with the same workflow split used across
-the family.
+in sync with README and examples, and example health is reported explicitly.
+Release state is tracked in GitHub milestones and release branches rather than
+generated README callouts.
 
 Shared Module Baseline
 ----------------------
@@ -43,10 +43,6 @@ Shared Module Baseline
      - ``scripts/check_example_api_coverage.py``
      - ``examples.yml``
      - Examples continue to exercise the documented public import surface.
-   * - Release callout upkeep
-     - ``scripts/update_release_readme.py``
-     - ``update-release-readme.yml``
-     - README release callouts stay aligned with the active monthly milestone.
 
 Workflow Responsibilities
 -------------------------
@@ -54,7 +50,6 @@ Workflow Responsibilities
 - ``ci.yml`` owns lint, type, test, coverage, docs-consistency, and docstring checks.
 - ``examples.yml`` owns example execution, example-doc generation, and example-derived badge metrics.
 - ``docs-pages.yml`` owns the published docs build.
-- ``update-release-readme.yml`` owns README release-callout refresh.
 - ``workflow.yml`` remains the aggregate maintainer workflow entry point.
 
 Analysis-Specific Notes

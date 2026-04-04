@@ -5,13 +5,6 @@
 [![Public API In Examples](https://raw.githubusercontent.com/cmudrc/design-research-analysis/HEAD/.github/badges/examples-api-coverage.svg)](https://github.com/cmudrc/design-research-analysis/actions/workflows/examples.yml)
 [![Docs](https://github.com/cmudrc/design-research-analysis/actions/workflows/docs-pages.yml/badge.svg)](https://github.com/cmudrc/design-research-analysis/actions/workflows/docs-pages.yml)
 
-<!-- release-callout:start -->
-> [!IMPORTANT]
-> Current monthly release: [Mellon Metrics - May 2026](https://github.com/cmudrc/design-research-analysis/milestone/2)  
-> Due: May 1, 2026  
-> Tracks: April 2026 work
-<!-- release-callout:end -->
-
 `design-research-analysis` is the unified-table analysis layer in the cmudrc design research ecosystem.
 
 It provides typed, reusable workflows for sequence, language, embedding-map, and statistical analysis over recurring event logs.
