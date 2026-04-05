@@ -47,11 +47,13 @@ Highlights
 - Embedding maps and clustering for embedding-space inspection
 - Statistical workflows for comparisons, regression, mixed effects, and power
 - Runtime provenance capture for reproducible study artifacts
+- An analysis-owned artifact handoff in ``design_research_analysis.integration``
 
 Typical Workflow
 ----------------
 
-1. Start from a unified event table or an exported
+1. Start from a unified event table or from
+   ``design_research_analysis.integration`` over an exported
    ``design-research-experiments`` ``events.csv`` artifact.
 2. Validate and, when needed, derive missing analysis columns.
 3. Run sequence, language, embedding-map, and/or statistical workflows.
