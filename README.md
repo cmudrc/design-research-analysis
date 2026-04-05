@@ -44,6 +44,9 @@ pip install "design-research-analysis[stats,data]"
 pip install "design-research-analysis[all]"
 ```
 
+Unified-table coercion, validation, and derived-column helpers ship in the base
+install, so there is no separate `table` extra.
+
 For contributor workflows:
 
 ```bash
