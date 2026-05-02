@@ -7,9 +7,9 @@
 
 <!-- release-callout:start -->
 > [!IMPORTANT]
-> Current monthly release: [Mellon Metrics - April 2026](https://github.com/cmudrc/design-research-analysis/milestone/2)  
-> Due: May 1, 2026  
-> Tracks: April 2026 work
+> Current monthly release: [Carnegie Calculus - May 2026](https://github.com/cmudrc/design-research-analysis/milestone/3)  
+> Due: June 1, 2026  
+> Tracks: May 2026 work
 <!-- release-callout:end -->
 
 `design-research-analysis` is the unified-table analysis layer in the cmudrc design research ecosystem.
