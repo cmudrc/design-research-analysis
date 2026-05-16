@@ -836,6 +836,7 @@ def bootstrap_ci(
     data = (x_arr,) if y_arr is None else (x_arr, y_arr)
 
     def statistic(*samples: np.ndarray) -> float:
+        """Evaluate the requested statistic for SciPy bootstrap resamples."""
         if len(samples) == 1:
             return _calc_stat(np.asarray(samples[0], dtype=float), None, stat)
         return _calc_stat(
@@ -900,6 +901,7 @@ def permutation_test(
     sp_stats = _load_scipy_stats()
 
     def statistic(sample_x: np.ndarray, sample_y: np.ndarray) -> float:
+        """Evaluate the requested statistic for one permutation split."""
         return _calc_stat(
             np.asarray(sample_x, dtype=float),
             np.asarray(sample_y, dtype=float),
