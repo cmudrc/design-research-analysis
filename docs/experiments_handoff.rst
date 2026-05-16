@@ -5,6 +5,9 @@ Use this guide when you already have study artifacts exported from
 ``design-research-experiments`` and want the shortest reliable path into
 analysis.
 
+The analysis-owned cross-library handoff lives in
+``design_research_analysis.integration``.
+
 Why This Handoff Exists
 -----------------------
 

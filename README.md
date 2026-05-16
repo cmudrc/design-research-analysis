@@ -30,6 +30,7 @@ This package centers on reproducible analysis workflows with a small top-level A
 - Embedding maps (PCA, t-SNE, UMAP, PaCMAP, TriMap) with clustering, comparison, and trajectory-plotting helpers
 - Statistical wrappers (group comparisons, OLS regression, mixed-effects models, nonparametrics, and power)
 - Runtime provenance capture for reproducibility manifests
+- An analysis-owned artifact handoff in `design_research_analysis.integration`
 - A thin CLI for deterministic pipeline runs
 
 ## Quickstart
@@ -107,6 +108,7 @@ The supported public surface is whatever is exported from `design_research_analy
 Top-level exports include:
 
 - Package metadata: `__version__`
+- Artifact handoff helpers: `integration`, `load_experiment_artifacts`, `validate_experiment_events`
 - Table contracts: `UnifiedTableConfig`, `UnifiedTableValidationReport`, `coerce_unified_table`, `derive_columns`, `validate_unified_table`
 - Sequence: `fit_markov_chain_from_table`, `fit_discrete_hmm_from_table`, `fit_text_gaussian_hmm_from_table`, `decode_hmm`, plotting helpers, and result types
 - Language: `compute_language_convergence`, `compute_semantic_distance_trajectory`, `fit_topic_model`, `score_sentiment`
