@@ -396,6 +396,14 @@ def _as_array(values: Any, name: str) -> np.ndarray:
     return arr
 
 
+def _load_scipy_stats() -> Any:
+    try:
+        from scipy import stats as sp_stats
+    except ImportError as exc:
+        raise ImportError(_STATS_IMPORT_ERROR) from exc
+    return sp_stats
+
+
 def _calc_stat(x: np.ndarray, y: np.ndarray | None, stat: str) -> float:
     if stat == "mean":
         return float(np.mean(x))
@@ -819,92 +827,36 @@ def bootstrap_ci(
 
     x_arr = _as_array(x, "x")
     y_arr = _as_array(y, "y") if y is not None else None
-
-    if method == "bca":
-        try:
-            from scipy import stats as sp_stats
-        except ImportError as exc:
-            raise ImportError(_STATS_IMPORT_ERROR) from exc
-
-        alpha = 1.0 - ci
-        if y_arr is None:
-            stat_fun: Any
-            if stat == "mean":
-                stat_fun = np.mean
-            elif stat == "median":
-                stat_fun = np.median
-            else:
-                raise ValueError(f"stat '{stat}' requires y values.")
-            bres = sp_stats.bootstrap(
-                (x_arr,),
-                stat_fun,
-                confidence_level=ci,
-                n_resamples=n_resamples,
-                method="BCa",
-                random_state=seed,
-            )
-            ci_low = float(bres.confidence_interval.low)
-            ci_high = float(bres.confidence_interval.high)
-            estimate = _calc_stat(x_arr, y_arr, stat)
-            rng = np.random.default_rng(seed)
-            samples = np.empty(n_resamples, dtype=float)
-            n_x = x_arr.size
-            for idx in range(n_resamples):
-                boot_x = x_arr[rng.integers(0, n_x, size=n_x)]
-                samples[idx] = _calc_stat(boot_x, None, stat)
-        else:
-            if stat not in {"diff_means", "diff_medians"}:
-                raise ValueError(f"stat '{stat}' is not valid for two-sample BCa.")
-            rng = np.random.default_rng(seed)
-            samples = np.empty(n_resamples, dtype=float)
-            n_x = x_arr.size
-            n_y = y_arr.size
-            for idx in range(n_resamples):
-                boot_x = x_arr[rng.integers(0, n_x, size=n_x)]
-                boot_y = y_arr[rng.integers(0, n_y, size=n_y)]
-                samples[idx] = _calc_stat(boot_x, boot_y, stat)
-            ci_low = float(np.quantile(samples, alpha / 2.0))
-            ci_high = float(np.quantile(samples, 1.0 - alpha / 2.0))
-            estimate = _calc_stat(x_arr, y_arr, stat)
-
-        distribution_summary = {
-            "n": int(samples.size),
-            "std": float(np.std(samples, ddof=1)),
-            "skew": float(
-                ((samples - samples.mean()) ** 3).mean() / (np.std(samples) ** 3 + 1e-12)
-            ),
-        }
-        return {
-            "estimate": estimate,
-            "ci_low": ci_low,
-            "ci_high": ci_high,
-            "distribution_summary": distribution_summary,
-            "method_used": method,
-            "interpretation": _render_ci_text(
-                estimate=estimate,
-                ci_low=ci_low,
-                ci_high=ci_high,
-                ci=ci,
-                stat=stat,
-            ),
-        }
-
-    if method != "percentile":
+    estimate = _calc_stat(x_arr, y_arr, stat)
+    method_key = method.lower()
+    if method_key not in {"percentile", "bca"}:
         raise ValueError("method must be one of: percentile, bca")
 
-    rng = np.random.default_rng(seed)
-    samples = np.empty(n_resamples, dtype=float)
-    n_x = x_arr.size
-    n_y = y_arr.size if y_arr is not None else 0
-    for idx in range(n_resamples):
-        boot_x = x_arr[rng.integers(0, n_x, size=n_x)]
-        boot_y_opt = y_arr[rng.integers(0, n_y, size=n_y)] if y_arr is not None else None
-        samples[idx] = _calc_stat(boot_x, boot_y_opt, stat)
+    sp_stats = _load_scipy_stats()
+    data = (x_arr,) if y_arr is None else (x_arr, y_arr)
 
-    alpha = 1.0 - ci
-    ci_low = float(np.quantile(samples, alpha / 2.0))
-    ci_high = float(np.quantile(samples, 1.0 - alpha / 2.0))
-    estimate = _calc_stat(x_arr, y_arr, stat)
+    def statistic(*samples: np.ndarray) -> float:
+        if len(samples) == 1:
+            return _calc_stat(np.asarray(samples[0], dtype=float), None, stat)
+        return _calc_stat(
+            np.asarray(samples[0], dtype=float),
+            np.asarray(samples[1], dtype=float),
+            stat,
+        )
+
+    result = sp_stats.bootstrap(
+        data,
+        statistic,
+        confidence_level=ci,
+        n_resamples=n_resamples,
+        method="BCa" if method_key == "bca" else "percentile",
+        random_state=seed,
+        vectorized=False,
+        paired=False,
+    )
+    ci_low = float(result.confidence_interval.low)
+    ci_high = float(result.confidence_interval.high)
+    samples = np.asarray(result.bootstrap_distribution, dtype=float).reshape(-1)
 
     distribution_summary = {
         "n": int(samples.size),
@@ -916,7 +868,7 @@ def bootstrap_ci(
         "ci_low": ci_low,
         "ci_high": ci_high,
         "distribution_summary": distribution_summary,
-        "method_used": method,
+        "method_used": method_key,
         "interpretation": _render_ci_text(
             estimate=estimate,
             ci_low=ci_low,
@@ -945,22 +897,24 @@ def permutation_test(
     x_arr = _as_array(x, "x")
     y_arr = _as_array(y, "y")
     observed = _calc_stat(x_arr, y_arr, stat)
+    sp_stats = _load_scipy_stats()
 
-    rng = np.random.default_rng(seed)
-    pooled = np.concatenate([x_arr, y_arr])
-    n_x = x_arr.size
-    perm_stats = np.empty(n_permutations, dtype=float)
+    def statistic(sample_x: np.ndarray, sample_y: np.ndarray) -> float:
+        return _calc_stat(
+            np.asarray(sample_x, dtype=float),
+            np.asarray(sample_y, dtype=float),
+            stat,
+        )
 
-    for idx in range(n_permutations):
-        perm = rng.permutation(pooled)
-        perm_stats[idx] = _calc_stat(perm[:n_x], perm[n_x:], stat)
-
-    if alternative == "two-sided":
-        p_value = float((np.abs(perm_stats) >= abs(observed)).mean())
-    elif alternative == "greater":
-        p_value = float((perm_stats >= observed).mean())
-    else:
-        p_value = float((perm_stats <= observed).mean())
+    result = sp_stats.permutation_test(
+        (x_arr, y_arr),
+        statistic,
+        n_resamples=n_permutations,
+        alternative=alternative,
+        random_state=seed,
+        vectorized=False,
+    )
+    p_value = float(result.pvalue)
 
     return {
         "p_value": p_value,
