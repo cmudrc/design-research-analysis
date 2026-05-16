@@ -8,6 +8,13 @@
 [![Examples Passing](https://raw.githubusercontent.com/cmudrc/design-research-analysis/HEAD/.github/badges/examples-passing.svg)](https://github.com/cmudrc/design-research-analysis/actions/workflows/examples.yml)
 [![Public API In Examples](https://raw.githubusercontent.com/cmudrc/design-research-analysis/HEAD/.github/badges/examples-api-coverage.svg)](https://github.com/cmudrc/design-research-analysis/actions/workflows/examples.yml)
 
+<!-- release-callout:start -->
+> [!IMPORTANT]
+> Current monthly release: [Carnegie Calculus - May 2026](https://github.com/cmudrc/design-research-analysis/milestone/3)  
+> Due: June 1, 2026  
+> Tracks: May 2026 work
+<!-- release-callout:end -->
+
 `design-research-analysis` is the unified-table analysis layer in the cmudrc design research ecosystem.
 
 It provides typed, reusable workflows for sequence, language, embedding-map, and statistical analysis over recurring event logs.
