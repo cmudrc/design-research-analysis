@@ -35,6 +35,12 @@ reproducible, and easier to compare across studies.
         <a class="drc-badge-link" href="https://github.com/cmudrc/design-research-analysis/actions/workflows/docs-pages.yml">
           <img alt="Docs" src="https://github.com/cmudrc/design-research-analysis/actions/workflows/docs-pages.yml/badge.svg">
         </a>
+        <a class="drc-badge-link" href="https://pypi.org/project/design-research-analysis/">
+          <img alt="PyPI Version" src="https://img.shields.io/pypi/v/design-research-analysis.svg">
+        </a>
+        <a class="drc-badge-link" href="https://pypi.org/project/design-research-analysis/">
+          <img alt="Python Versions" src="https://img.shields.io/pypi/pyversions/design-research-analysis.svg">
+        </a>
       </div>
 
 Highlights
