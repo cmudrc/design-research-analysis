@@ -23,10 +23,9 @@ and
 For the canonical export contract itself, see the
 `design-research-experiments artifact contract <https://cmudrc.github.io/design-research-experiments/artifact_contract.html>`_.
 
-The stable handoff unit is the exported study-output directory. In practice,
-``events.csv`` is the first file to validate and analyze, while ``runs.csv``
-and ``evaluations.csv`` are the files you rejoin later when you need study
-context and outcome metadata around the event stream.
+The stable handoff unit is the exported study-output directory. For standard
+workflows, prefer artifact-first helpers that accept that directory and perform
+the run, condition, event, and evaluation joins internally.
 
 Canonical Input Files
 ---------------------
@@ -61,9 +60,7 @@ Then run one downstream analysis workflow on the same artifact input.
 You can use the same validated ``events.csv`` input for language, embedding-map, and
 stats commands depending on the study question.
 
-If you prefer to load the whole export directory first, use the integration
-helpers and treat ``events.csv`` as the analysis entry point inside that
-artifact bundle:
+If you need low-level inspection, you can still load the whole export directory:
 
 .. code-block:: python
 
@@ -79,19 +76,20 @@ Validation And Derivation In Python
 
 .. code-block:: python
 
-   from design_research_analysis import fit_markov_chain_from_table
    from design_research_analysis.integration import (
-       load_experiment_artifacts,
+       fit_markov_chains_from_artifacts,
        validate_experiment_events,
    )
 
-   artifacts = load_experiment_artifacts("study-output")
    report = validate_experiment_events("study-output/events.csv")
    if not report.is_valid:
        raise RuntimeError("; ".join(report.errors))
 
-   result = fit_markov_chain_from_table(artifacts["events.csv"])
-   print(result.states)
+   chains = fit_markov_chains_from_artifacts(
+       "study-output",
+       condition_column="agent_treatment",
+   )
+   print(chains["planner"].states)
 
 Column Expectations In The Export Handoff
 -----------------------------------------
@@ -131,24 +129,12 @@ Treat these groups differently in maintainer docs and downstream code:
 - Derived columns are the sanctioned fallback when upstream traces are stable
   but still need normalization into the shared analysis vocabulary.
 
-Rejoin Study Context
---------------------
+Artifact-First Workflows
+------------------------
 
-After analysis, rejoin event-level outputs back to study context.
-
-Preferred join path:
-
-- If ``events.csv`` includes ``run_id``, join on
-  ``events.run_id -> runs.run_id`` and
-  ``events.run_id -> evaluations.run_id``.
-
-Fallback join path:
-
-- If ``run_id`` is absent, join on
-  ``events.session_id -> runs.run_id`` and
-  ``events.session_id -> evaluations.run_id``.
-  The experiments exporter defaults ``session_id`` to the run id when a session
-  id is otherwise missing.
+The integration helpers hide canonical-table joins for common study questions.
+Use these first, then drop down to table-level APIs only when you need custom
+feature engineering.
 
 Compare Condition Metrics From Exports
 --------------------------------------
@@ -159,20 +145,13 @@ comparisons over canonical experiment exports without custom joins.
 .. code-block:: python
 
    from design_research_analysis import (
-       build_condition_metric_table,
-       compare_condition_pairs,
+       compare_condition_pairs_from_artifacts,
    )
 
-   condition_metric_rows = build_condition_metric_table(
-       runs_rows,
+   report = compare_condition_pairs_from_artifacts(
+       "study-output",
        metric="market_share_proxy",
        condition_column="selection_strategy",
-       conditions=conditions_rows,
-       evaluations=evaluations_rows,
-   )
-
-   report = compare_condition_pairs(
-       condition_metric_rows,
        condition_pairs=[
            ("profit_focus_prompt", "neutral_prompt"),
            ("neutral_prompt", "random_selection"),
@@ -183,6 +162,38 @@ comparisons over canonical experiment exports without custom joins.
 
    print(report.render_brief())
    print(report.to_significance_rows())
+
+Compare Markov Chains Across Agent Treatments
+---------------------------------------------
+
+.. code-block:: python
+
+   from design_research_analysis import compare_markov_chains_from_artifacts
+
+   comparison = compare_markov_chains_from_artifacts(
+       "study-output",
+       condition_column="agent_treatment",
+       left_condition="planner_agent",
+       right_condition="baseline_agent",
+   )
+
+   print(comparison.to_dict())
+
+Fit Regressions Across Sweeps And Factorial Designs
+---------------------------------------------------
+
+.. code-block:: python
+
+   from design_research_analysis import fit_regression_from_artifacts
+
+   result = fit_regression_from_artifacts(
+       "study-output",
+       outcome="rubric_score",
+       predictors=("model_size_b", "task_family", "agent_treatment"),
+       categorical_predictors=("task_family", "agent_treatment"),
+   )
+
+   print(result.coefficients)
 
 Related Docs
 ------------
