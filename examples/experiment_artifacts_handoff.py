@@ -9,14 +9,13 @@ without manually joining ``runs.csv``, ``conditions.csv``, ``events.csv``, or
 ## Technical Implementation
 1. Write a tiny deterministic artifact bundle that stands in for an exported
    experiment.
-2. Validate and load the bundle through integration helpers.
+2. Validate the bundle through top-level artifact helpers.
 3. Run condition comparisons, Markov-chain comparisons, and regression directly
    from the artifact directory.
 
 ## Expected Results
-Prints the loaded artifact names, validation status, condition-comparison count,
-Markov-chain labels, transition-comparison estimate, and regression
-coefficients.
+Prints validation status, derived table sizes, condition-comparison count,
+Markov-chain labels, transition-comparison estimate, and regression coefficients.
 
 ## References
 - docs/experiments_handoff.rst
@@ -160,7 +159,6 @@ def main() -> None:
         output_dir = Path(tmp) / "study-output"
         _write_artifacts(output_dir)
 
-        artifacts = dran.load_experiment_artifacts(output_dir)
         validation = dran.validate_experiment_events(output_dir / "events.csv")
         joined_events = dran.build_event_table_from_artifacts(output_dir)
         metric_rows = dran.build_condition_metric_table_from_artifacts(
@@ -197,8 +195,6 @@ def main() -> None:
             categorical_predictors=("task_family",),
         )
 
-        print("Integration exports:", ", ".join(dran.integration.__all__[:3]))
-        print("Artifacts:", ", ".join(sorted(artifacts)))
         print("Events valid:", validation.is_valid, f"rows={validation.n_rows}")
         print("Joined event rows:", len(joined_events))
         print("Metric rows:", len(metric_rows), f"run rows={len(run_metrics)}")

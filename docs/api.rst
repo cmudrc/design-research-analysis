@@ -16,7 +16,7 @@ Top-level groups:
   ``DecodeResult``, ``fit_markov_chain_from_table``, ``fit_discrete_hmm_from_table``,
   ``fit_text_gaussian_hmm_from_table``, ``decode_hmm``, ``plot_transition_matrix``,
   ``plot_state_graph``
-- Integration: ``load_experiment_artifacts``, ``validate_experiment_events``,
+- Artifact handoff: ``load_experiment_artifacts``, ``validate_experiment_events``,
   ``build_condition_metric_table_from_artifacts``,
   ``compare_condition_pairs_from_artifacts``, ``build_event_table_from_artifacts``,
   ``fit_markov_chains_from_artifacts``, ``compare_markov_chains_from_artifacts``,

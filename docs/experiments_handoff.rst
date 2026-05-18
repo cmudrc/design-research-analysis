@@ -5,8 +5,8 @@ Use this guide when you already have study artifacts exported from
 ``design-research-experiments`` and want the shortest reliable path into
 analysis.
 
-The analysis-owned cross-library handoff lives in
-``design_research_analysis.integration``.
+The analysis-owned cross-library handoff is exposed through top-level
+artifact helpers in ``design_research_analysis``.
 
 Why This Handoff Exists
 -----------------------
@@ -60,32 +60,32 @@ Then run one downstream analysis workflow on the same artifact input.
 You can use the same validated ``events.csv`` input for language, embedding-map, and
 stats commands depending on the study question.
 
-If you need low-level inspection, you can still load the whole export directory:
+For standard Python workflows, start with the package-level artifact helpers:
 
 .. code-block:: python
 
-   from design_research_analysis.integration import load_experiment_artifacts
+   import design_research_analysis as dran
 
-   artifacts = load_experiment_artifacts("study-output")
-   print(sorted(artifacts))
-   rows = artifacts["events.csv"]
-   print(len(rows))
+   report = dran.validate_experiment_events("study-output/events.csv")
+   metric_rows = dran.build_condition_metric_table_from_artifacts(
+       "study-output",
+       metric="quality_score",
+       condition_column="agent_treatment",
+   )
+   print(report.is_valid, len(metric_rows))
 
 Validation And Derivation In Python
 -----------------------------------
 
 .. code-block:: python
 
-   from design_research_analysis.integration import (
-       fit_markov_chains_from_artifacts,
-       validate_experiment_events,
-   )
+   import design_research_analysis as dran
 
-   report = validate_experiment_events("study-output/events.csv")
+   report = dran.validate_experiment_events("study-output/events.csv")
    if not report.is_valid:
        raise RuntimeError("; ".join(report.errors))
 
-   chains = fit_markov_chains_from_artifacts(
+   chains = dran.fit_markov_chains_from_artifacts(
        "study-output",
        condition_column="agent_treatment",
    )
@@ -132,7 +132,7 @@ Treat these groups differently in maintainer docs and downstream code:
 Artifact-First Workflows
 ------------------------
 
-The integration helpers hide canonical-table joins for common study questions.
+The artifact helpers hide canonical-table joins for common study questions.
 Use these first, then drop down to table-level APIs only when you need custom
 feature engineering.
 

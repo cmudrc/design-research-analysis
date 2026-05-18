@@ -16,7 +16,7 @@ Technical Implementation
 
 1. Write a tiny deterministic artifact bundle that stands in for an exported
    experiment.
-2. Validate and load the bundle through integration helpers.
+2. Validate the bundle through top-level artifact helpers.
 3. Run condition comparisons, Markov-chain comparisons, and regression directly
    from the artifact directory.
 
@@ -34,9 +34,8 @@ Expected Results
 
    PYTHONPATH=src python examples/experiment_artifacts_handoff.py
 
-Prints the loaded artifact names, validation status, condition-comparison count,
-Markov-chain labels, transition-comparison estimate, and regression
-coefficients.
+Prints validation status, derived table sizes, condition-comparison count,
+Markov-chain labels, transition-comparison estimate, and regression coefficients.
 
 References
 ----------

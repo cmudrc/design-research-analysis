@@ -51,22 +51,7 @@ def load_experiment_artifacts(path: str | Path) -> dict[str, Any]:
     Raises:
         ValueError: If ``path`` does not resolve to a canonical artifact directory.
     """
-    output_dir = _resolve_output_dir(path)
-    missing = [
-        artifact_name
-        for artifact_name in _ANALYSIS_ARTIFACT_FILES
-        if not (output_dir / artifact_name).exists()
-    ]
-    if missing:
-        raise ValueError("Missing canonical experiment artifacts: " + ", ".join(missing) + ".")
-
-    return {
-        "manifest.json": _read_json(output_dir / "manifest.json"),
-        "conditions.csv": _read_csv(output_dir / "conditions.csv"),
-        "runs.csv": _read_csv(output_dir / "runs.csv"),
-        "events.csv": _read_csv(output_dir / "events.csv"),
-        "evaluations.csv": _read_csv(output_dir / "evaluations.csv"),
-    }
+    return _load_artifact_rows(path, artifact_names=_ANALYSIS_ARTIFACT_FILES)
 
 
 def validate_experiment_events(path: str | Path) -> UnifiedTableValidationReport:
@@ -97,7 +82,10 @@ def build_condition_metric_table_from_artifacts(
     evaluation_value_column: str = "metric_value",
 ) -> list[dict[str, Any]]:
     """Build a condition metric table directly from canonical experiment artifacts."""
-    artifacts = load_experiment_artifacts(path)
+    artifacts = _load_artifact_rows(
+        path,
+        artifact_names=("conditions.csv", "runs.csv", "evaluations.csv"),
+    )
     return build_condition_metric_table(
         artifacts["runs.csv"],
         metric=metric,
@@ -150,7 +138,10 @@ def build_event_table_from_artifacts(
     condition_id_column: str = "condition_id",
 ) -> list[dict[str, Any]]:
     """Return event rows enriched with run and condition context from artifacts."""
-    artifacts = load_experiment_artifacts(path)
+    artifacts = _load_artifact_rows(
+        path,
+        artifact_names=("conditions.csv", "runs.csv", "events.csv"),
+    )
     conditions = _rows(artifacts["conditions.csv"], table_name="conditions.csv")
     runs = _rows(artifacts["runs.csv"], table_name="runs.csv")
     events = _rows(artifacts["events.csv"], table_name="events.csv")
@@ -296,7 +287,10 @@ def build_run_metric_table_from_artifacts(
     evaluation_value_column: str = "metric_value",
 ) -> list[dict[str, Any]]:
     """Return one run-level row with requested metrics and experiment context."""
-    artifacts = load_experiment_artifacts(path)
+    artifacts = _load_artifact_rows(
+        path,
+        artifact_names=("conditions.csv", "runs.csv", "evaluations.csv"),
+    )
     return _build_run_metric_table(
         artifacts,
         metrics=_as_name_list(metrics, name="metrics"),
@@ -324,7 +318,10 @@ def fit_regression_from_artifacts(
     if not predictors:
         raise ValueError("predictors must contain at least one column.")
 
-    artifacts = load_experiment_artifacts(path)
+    artifacts = _load_artifact_rows(
+        path,
+        artifact_names=("conditions.csv", "runs.csv", "evaluations.csv"),
+    )
     context_columns = _artifact_context_columns(
         artifacts,
         condition_columns=condition_columns,
@@ -389,6 +386,32 @@ def _resolve_events_path(path: str | Path) -> Path:
             "Expected a study output directory or the canonical 'events.csv' artifact path."
         )
     return events_path
+
+
+def _load_artifact_rows(
+    path: str | Path,
+    *,
+    artifact_names: Sequence[str],
+) -> dict[str, Any]:
+    """Load the requested canonical artifacts from one export directory."""
+    output_dir = _resolve_output_dir(path)
+    _require_artifacts(output_dir, artifact_names)
+    rows: dict[str, Any] = {}
+    for artifact_name in artifact_names:
+        artifact_path = output_dir / artifact_name
+        rows[artifact_name] = (
+            _read_json(artifact_path)
+            if artifact_path.suffix.lower() == ".json"
+            else _read_csv(artifact_path)
+        )
+    return rows
+
+
+def _require_artifacts(output_dir: Path, artifact_names: Sequence[str]) -> None:
+    """Raise a clear error when a canonical export file is missing."""
+    missing = [name for name in artifact_names if not (output_dir / name).exists()]
+    if missing:
+        raise ValueError("Missing canonical experiment artifacts: " + ", ".join(missing) + ".")
 
 
 def _read_csv(path: Path) -> list[dict[str, Any]]:
