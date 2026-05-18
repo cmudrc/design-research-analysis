@@ -22,7 +22,7 @@ Technical Implementation
 
 .. literalinclude:: ../../examples/experiment_artifacts_handoff.py
    :language: python
-   :lines: 25-
+   :lines: 24-
    :linenos:
 
 Expected Results
