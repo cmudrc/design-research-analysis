@@ -43,6 +43,9 @@ Install extras by analysis family.
    pip install "design-research-analysis[stats,data]"
    pip install "design-research-analysis[all]"
 
+Unified-table coercion, validation, and derived-column helpers are already part
+of the base install, so there is no separate ``table`` extra.
+
 When working from a source checkout, replace ``design-research-analysis`` with ``.``
 to install the same extras in editable mode.
 

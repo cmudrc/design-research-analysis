@@ -20,6 +20,7 @@ _HAS_STATSMODELS = importlib.util.find_spec("statsmodels") is not None
 _HAS_PANDAS = importlib.util.find_spec("pandas") is not None
 
 
+@pytest.mark.skipif(not _HAS_SCIPY, reason="scipy unavailable")
 def test_bootstrap_ci_deterministic_bounds() -> None:
     x = np.array([1, 2, 3, 4, 5], dtype=float)
     result = bootstrap_ci(x, stat="mean", n_resamples=4000, seed=2)
@@ -27,6 +28,7 @@ def test_bootstrap_ci_deterministic_bounds() -> None:
     assert 3.0 < result["ci_high"] < 4.8
 
 
+@pytest.mark.skipif(not _HAS_SCIPY, reason="scipy unavailable")
 def test_permutation_detects_shift() -> None:
     rng = np.random.default_rng(7)
     x = rng.normal(0.0, 1.0, 80)
@@ -91,6 +93,7 @@ def test_power_functions_surface_import_error(monkeypatch) -> None:
         estimate_sample_size(0.5, test="paired_t")
 
 
+@pytest.mark.skipif(not _HAS_SCIPY, reason="scipy unavailable")
 def test_bootstrap_ci_additional_paths() -> None:
     result = bootstrap_ci([1, 2, 3, 4], stat="median", n_resamples=200, seed=1)
     assert result["method_used"] == "percentile"
@@ -146,6 +149,7 @@ def test_rank_tests_validation_errors() -> None:
         rank_tests_one_stop([1, 2], kind="friedman")
 
 
+@pytest.mark.skipif(not _HAS_SCIPY, reason="scipy unavailable")
 def test_permutation_test_alternative_modes_and_errors() -> None:
     greater = permutation_test(
         [1, 2, 3], [0, 1, 2], alternative="greater", n_permutations=300, seed=0

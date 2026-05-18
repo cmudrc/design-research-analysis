@@ -72,6 +72,7 @@ Full Catalog
    basic_usage
    condition_pair_significance
    embedding_maps_trajectories
+   experiment_artifacts_handoff
    idea_space_metrics
    lab_study_pipeline
    language_custom_embedder

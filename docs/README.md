@@ -43,3 +43,4 @@ When public exports change, update:
 - `docs/api.rst`
 - workflow/CLI references
 - quickstart/examples snippets
+- `docs/automation_baseline.rst` if workflow ownership changes

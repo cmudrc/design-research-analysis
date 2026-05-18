@@ -4,6 +4,11 @@ Quickstart
 This example shows the shortest meaningful path through
 ``design-research-analysis``.
 
+If you already have exported study artifacts from
+``design-research-experiments``, skip directly to :doc:`experiments_handoff`.
+That is the shortest path when ``events.csv`` already exists and you want to
+validate it before running downstream analysis.
+
 1. Install
 ----------
 
@@ -94,4 +99,5 @@ participants, ``design-research-problems`` supplies the task,
 
 If you are starting from exported study artifacts rather than an in-memory
 table, use :doc:`experiments_handoff` for the recommended ``events.csv`` to
-analysis path.
+analysis path, including how to rejoin ``runs.csv`` and ``evaluations.csv``
+after the event-level workflows are complete.
