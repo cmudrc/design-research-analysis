@@ -35,6 +35,12 @@ reproducible, and easier to compare across studies.
         <a class="drc-badge-link" href="https://github.com/cmudrc/design-research-analysis/actions/workflows/docs-pages.yml">
           <img alt="Docs" src="https://github.com/cmudrc/design-research-analysis/actions/workflows/docs-pages.yml/badge.svg">
         </a>
+        <a class="drc-badge-link" href="https://pypi.org/project/design-research-analysis/">
+          <img alt="PyPI Version" src="https://img.shields.io/pypi/v/design-research-analysis.svg">
+        </a>
+        <a class="drc-badge-link" href="https://pypi.org/project/design-research-analysis/">
+          <img alt="Python Versions" src="https://img.shields.io/pypi/pyversions/design-research-analysis.svg">
+        </a>
       </div>
 
 Highlights
@@ -47,12 +53,13 @@ Highlights
 - Embedding maps and clustering for embedding-space inspection
 - Statistical workflows for comparisons, regression, mixed effects, and power
 - Runtime provenance capture for reproducible study artifacts
+- Top-level artifact handoff helpers for experiment exports
 
 Typical Workflow
 ----------------
 
-1. Start from a unified event table or an exported
-   ``design-research-experiments`` ``events.csv`` artifact.
+1. Start from a unified event table or top-level artifact helpers over an
+   exported ``design-research-experiments`` study-output directory.
 2. Validate and, when needed, derive missing analysis columns.
 3. Run sequence, language, embedding-map, and/or statistical workflows.
 4. Persist JSON summaries, CSV exports, and provenance manifests.
@@ -97,6 +104,7 @@ repeatable analysis environments.
 - :doc:`api`
 - :doc:`cli_reference`
 - :doc:`dependencies_and_extras`
+- :doc:`automation_baseline`
 
 Integration With The Ecosystem
 ------------------------------
@@ -130,6 +138,7 @@ Start Here
 - :doc:`typical_workflow`
 - :doc:`examples/index`
 - :doc:`api`
+- :doc:`automation_baseline`
 - `CONTRIBUTING.md <https://github.com/cmudrc/design-research-analysis/blob/HEAD/CONTRIBUTING.md>`_
 
 .. toctree::
@@ -161,6 +170,7 @@ Start Here
    api
    cli_reference
    dependencies_and_extras
+   automation_baseline
 
 .. toctree::
    :maxdepth: 1

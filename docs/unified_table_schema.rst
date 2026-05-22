@@ -31,6 +31,12 @@ Optional:
 
 - ``meta_json``
 
+Derived in the common experiments handoff when needed:
+
+- ``record_id``
+- ``actor_id``
+- ``event_type``
+
 Loose Schema Strategy
 ---------------------
 
@@ -40,6 +46,10 @@ deterministic mapper functions before running sequence analyses.
 In the experiments export handoff, ``record_id`` may also be derived when the
 upstream artifact keeps stable event rows but does not emit explicit record
 identifiers.
+
+Use :doc:`experiments_handoff` when the input came from
+``design-research-experiments`` and you want the concrete ``events.csv`` ->
+validation -> downstream-analysis path rather than the abstract schema view.
 
 Key API surfaces:
 

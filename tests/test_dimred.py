@@ -107,6 +107,7 @@ def test_build_embedding_map_trimap_returns_finite_coordinates() -> None:
     assert result.method == "trimap"
 
 
+@pytest.mark.skipif(importlib.util.find_spec("sklearn") is None, reason="sklearn unavailable")
 def test_cluster_embedding_map_kmeans_is_deterministic() -> None:
     coordinates = np.asarray(
         [

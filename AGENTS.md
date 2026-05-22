@@ -56,34 +56,36 @@ merging.
 ## Release Naming
 
 - Theme: Pittsburgh / CMU people, places, and institutions.
-- Monthly release names are shared across milestone titles, release PR titles,
-  and release branches.
-  - Milestone title / PR title: `{base name} - {Month YYYY}`
+- Monthly work-cycle names are shared across milestone titles, release PR
+  titles, and release branches.
+- Name the cycle for the month the work is done, not the later drop month.
+  - Milestone title / PR title: `{base name} - {Work month YYYY}`
   - Release branch: slugified full title, for example
-    `mellon-metrics-may-2026`
+    `mellon-metrics-april-2026`
+- Milestone due dates should land in the first week of the following month.
 - Milestone descriptions must use:
-  - `Tracks {previous month YYYY} work.`
+  - `Work month: {Month YYYY}.`
   - `Theme source: <url>`
 - Release PR bodies must repeat the same `Theme source:` link used on the
-  milestone.
-- Never reuse an exact base name or the same primary subject across any month
-  or any of the four design-research module repos unless all four `AGENTS.md`
-  files are intentionally updated together.
+  milestone and refer to the same work month named in the title.
+- Never reuse an exact base name or the same primary subject across any work
+  month or any of the four design-research module repos unless all four
+  `AGENTS.md` files are intentionally updated together.
 - Before adding a new release name, check the `Release Naming` tables in all
   four repos to avoid repeats.
 
-| Due date | Base name | Source subject |
-| --- | --- | --- |
-| April 1, 2026 | Allegheny Analysis | Allegheny River |
-| May 1, 2026 | Mellon Metrics | Andrew Mellon |
-| June 1, 2026 | Carnegie Calculus | Andrew Carnegie |
-| July 1, 2026 | Resnik Readout | Judith Resnik |
-| August 1, 2026 | Cathedral Calculus | Cathedral of Learning |
-| September 1, 2026 | Schenley Signals | Schenley Park |
-| October 1, 2026 | Oakland Observations | Oakland, Pittsburgh |
-| November 1, 2026 | Nationality Notes | Nationality Rooms |
-| December 1, 2026 | Doherty Diagnostics | Doherty Hall |
-| January 1, 2027 | Tartan Trends | Carnegie Mellon Tartans |
+| Work month | Target drop | Base name | Source subject |
+| --- | --- | --- | --- |
+| March 2026 | April 1, 2026 | Allegheny Analysis | Allegheny River |
+| April 2026 | May 1, 2026 | Mellon Metrics | Andrew Mellon |
+| May 2026 | June 1, 2026 | Carnegie Calculus | Andrew Carnegie |
+| June 2026 | July 1, 2026 | Resnik Readout | Judith Resnik |
+| July 2026 | August 1, 2026 | Cathedral Calculus | Cathedral of Learning |
+| August 2026 | September 1, 2026 | Schenley Signals | Schenley Park |
+| September 2026 | October 1, 2026 | Oakland Observations | Oakland, Pittsburgh |
+| October 2026 | November 1, 2026 | Nationality Notes | Nationality Rooms |
+| November 2026 | December 1, 2026 | Doherty Diagnostics | Doherty Hall |
+| December 2026 | January 1, 2027 | Tartan Trends | Carnegie Mellon Tartans |
 
 ## Keep This File Up To Date
 

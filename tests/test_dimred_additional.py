@@ -221,4 +221,6 @@ def test_kmeans_validation_and_import_errors(monkeypatch: pytest.MonkeyPatch) ->
     with pytest.raises(ImportError, match="optional dependencies"):
         build_embedding_map(np.ones((4, 2)), method="trimap")
     with pytest.raises(ImportError, match="optional dependencies"):
+        cluster_embedding_map(np.ones((4, 2)), method="kmeans")
+    with pytest.raises(ImportError, match="optional dependencies"):
         cluster_embedding_map(np.ones((4, 2)), method="agglomerative")

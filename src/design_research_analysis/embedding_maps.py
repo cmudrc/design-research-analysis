@@ -848,26 +848,19 @@ def _kmeans(
     if n_clusters > points.shape[0]:
         raise ValueError("n_clusters cannot exceed number of points.")
 
-    rng = np.random.default_rng(random_state)
-    indices = rng.choice(points.shape[0], size=n_clusters, replace=False)
-    centers = points[indices].copy()
+    try:
+        from sklearn.cluster import KMeans
+    except ImportError as exc:
+        raise ImportError(_MAPS_IMPORT_ERROR) from exc
 
-    labels = np.zeros(points.shape[0], dtype=int)
-    for _ in range(max_iter):
-        distances = np.linalg.norm(points[:, None, :] - centers[None, :, :], axis=2)
-        new_labels = np.argmin(distances, axis=1)
-        if np.array_equal(new_labels, labels):
-            break
-        labels = new_labels
-
-        for cluster_id in range(n_clusters):
-            members = points[labels == cluster_id]
-            if len(members) == 0:
-                centers[cluster_id] = points[rng.integers(0, points.shape[0])]
-            else:
-                centers[cluster_id] = np.mean(members, axis=0)
-
-    return labels, centers
+    model = KMeans(
+        n_clusters=n_clusters,
+        random_state=random_state,
+        max_iter=max_iter,
+        n_init=10,
+    )
+    labels = model.fit_predict(points)
+    return labels.astype(int), np.asarray(model.cluster_centers_, dtype=float)
 
 
 def cluster_embedding_map(

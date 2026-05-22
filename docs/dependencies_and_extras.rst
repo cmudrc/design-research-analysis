@@ -55,6 +55,9 @@ Extras Matrix
    * - ``dev``
      - Contributor tooling
 
+Unified-table coercion, validation, and derived-column helpers are part of the
+base install, so there is no separate ``table`` extra to add.
+
 ``seq`` is usually the first add-on for event-transition studies. ``lang`` and
 ``embeddings`` are most useful for discourse and semantic analyses. ``maps`` is
 best when structural embedding comparisons or trajectory overlays are central.
