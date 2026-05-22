@@ -9,9 +9,9 @@
 
 <!-- release-callout:start -->
 > [!IMPORTANT]
-> Current monthly release: [Carnegie Calculus - May 2026](https://github.com/cmudrc/design-research-analysis/milestone/3)  
-> Due: June 1, 2026  
-> Tracks: May 2026 work
+> Current monthly release: [Resnik Readout - June 2026](https://github.com/cmudrc/design-research-analysis/milestone/4)  
+> Due: July 1, 2026  
+> Tracks: June 2026 work
 <!-- release-callout:end -->
 
 `design-research-analysis` is the unified-table analysis layer in the cmudrc design research ecosystem.
