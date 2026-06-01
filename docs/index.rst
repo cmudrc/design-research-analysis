@@ -138,6 +138,7 @@ Start Here
 - :doc:`typical_workflow`
 - :doc:`examples/index`
 - :doc:`api`
+- :doc:`vscode_start`
 - :doc:`automation_baseline`
 - `CONTRIBUTING.md <https://github.com/cmudrc/design-research-analysis/blob/HEAD/CONTRIBUTING.md>`_
 
@@ -170,6 +171,7 @@ Start Here
    api
    cli_reference
    dependencies_and_extras
+   vscode_start
    automation_baseline
 
 .. toctree::
