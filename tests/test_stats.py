@@ -5,7 +5,13 @@ import importlib.util
 import numpy as np
 import pytest
 
-from design_research_analysis.stats import compare_groups, fit_mixed_effects, fit_regression
+from design_research_analysis.stats import (
+    GroupComparisonResult,
+    MixedEffectsResult,
+    compare_groups,
+    fit_mixed_effects,
+    fit_regression,
+)
 
 
 @pytest.mark.skipif(importlib.util.find_spec("scipy") is None, reason="scipy unavailable")
@@ -18,6 +24,90 @@ def test_compare_groups_returns_expected_directionality() -> None:
     assert result.method == "ttest"
     assert result.group_means["B"] > result.group_means["A"]
     assert result.p_value < 0.05
+
+
+@pytest.mark.skipif(importlib.util.find_spec("scipy") is None, reason="scipy unavailable")
+def test_compare_groups_table_anova_kruskal_and_edge_methods() -> None:
+    rows = [
+        {"group": "A", "value": 1.0},
+        {"group": "A", "value": 1.1},
+        {"group": "B", "value": 2.0},
+        {"group": "B", "value": 2.1},
+        {"group": "C", "value": 3.0},
+        {"group": "C", "value": 3.1},
+    ]
+
+    anova = compare_groups(data=rows)
+    kruskal = compare_groups(data=rows, method="kruskal")
+
+    assert anova.method == "anova"
+    assert kruskal.method == "kruskal"
+    assert anova.effect_size > 0.0
+
+    constant = compare_groups([1.0, 1.0, 1.0, 1.0], ["A", "A", "B", "B"], method="ttest")
+    assert constant.effect_size == 0.0
+
+    singleton = compare_groups([1.0, 2.0], ["A", "B"], method="ttest")
+    assert singleton.effect_size == 0.0
+
+    flat = compare_groups([1.0, 1.0, 1.0, 1.0], ["A", "A", "B", "B"], method="anova")
+    assert flat.effect_size == 0.0
+
+    with pytest.raises(ValueError, match="Row 0 is missing"):
+        compare_groups(data=[{"group": "A"}])
+    with pytest.raises(ValueError, match="ttest requires exactly two groups"):
+        compare_groups(data=rows, method="ttest")
+    with pytest.raises(ValueError, match="Unsupported method"):
+        compare_groups(data=rows, method="bogus")
+
+
+def test_group_and_mixed_results_compare_on_aligned_fields() -> None:
+    left = GroupComparisonResult(
+        method="ttest",
+        statistic=2.0,
+        p_value=0.05,
+        effect_size=0.4,
+        group_means={"A": 1.0},
+        group_sizes={"A": 3},
+    )
+    right = GroupComparisonResult(
+        method="anova",
+        statistic=3.0,
+        p_value=0.01,
+        effect_size=0.7,
+        group_means={"B": 2.0},
+        group_sizes={"B": 4},
+    )
+
+    diff = left - right
+    assert diff.metric == "group_summary"
+    assert diff.details["group_labels"] == ["A", "B"]
+    assert diff.details["methods"] == ["ttest", "anova"]
+
+    mixed_left = MixedEffectsResult(
+        success=True,
+        backend="statsmodels",
+        formula="y ~ x",
+        group_column="subject",
+        params={"Intercept": 1.0},
+        aic=None,
+        bic=4.0,
+        log_likelihood=-1.0,
+    )
+    mixed_right = MixedEffectsResult(
+        success=False,
+        backend="statsmodels",
+        formula="y ~ z",
+        group_column="cohort",
+        params={"slope": 2.0},
+        aic=5.0,
+        bic=None,
+        log_likelihood=None,
+    )
+
+    mixed_diff = mixed_left - mixed_right
+    assert mixed_diff.metric == "mixed_effects_profile"
+    assert mixed_diff.details["parameter_names"] == ["Intercept", "slope"]
 
 
 def test_fit_regression_recovers_linear_relationship() -> None:
@@ -42,6 +132,18 @@ def test_fit_regression_input_validation() -> None:
         fit_regression(np.empty((0, 1)), np.empty((0,)))
     with pytest.raises(ValueError, match="feature_names length"):
         fit_regression([[1.0], [2.0]], [1.0, 2.0], feature_names=["a", "b"])
+
+
+def test_fit_regression_without_intercept_uses_default_feature_names() -> None:
+    result = fit_regression(
+        [[1.0, 2.0], [2.0, 4.0], [3.0, 6.0]],
+        [3.0, 6.0, 9.0],
+        add_intercept=False,
+    )
+
+    assert result.intercept == 0.0
+    assert set(result.coefficients) == {"x0", "x1"}
+    assert result.config == {"add_intercept": False}
 
 
 @pytest.mark.skipif(
@@ -80,3 +182,5 @@ def test_fit_mixed_effects_validation_errors() -> None:
         fit_mixed_effects([], formula="y ~ x", group_column="g", backend="bad")
     with pytest.raises(ValueError, match="requires at least one row"):
         fit_mixed_effects([], formula="y ~ x", group_column="g")
+    with pytest.raises(ValueError, match="group_column 'missing'"):
+        fit_mixed_effects([{"g": "a", "y": 1.0, "x": 0.0}], formula="y ~ x", group_column="missing")
