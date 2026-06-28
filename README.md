@@ -36,7 +36,8 @@ This package centers on reproducible analysis workflows with a small top-level A
 
 Requires Python 3.12+.
 Maintainer workflows target Python `3.12` (`.python-version`).
-For a VS Code-oriented contributor setup, see
+For a VS Code path that starts from PyPI and then shows the repository example
+workflow, see
 [VS Code Start](docs/vscode_start.rst).
 
 Install from PyPI:
