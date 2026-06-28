@@ -3,6 +3,7 @@ from __future__ import annotations
 import builtins
 import importlib.util
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
@@ -13,7 +14,12 @@ from design_research_analysis.embedding_maps import (
     _kmeans,
     build_embedding_map,
     cluster_embedding_map,
+    compare_embedding_maps,
+    compute_design_space_coverage,
+    compute_idea_space_trajectory,
     embed_records,
+    plot_embedding_map,
+    plot_embedding_map_grid,
 )
 
 
@@ -106,6 +112,15 @@ def test_embed_records_validation_errors() -> None:
             embedder=lambda texts: np.asarray([[1.0, 2.0], [3.0, 4.0]]),
         )
 
+    with pytest.raises(ValueError, match="record_id values must be unique"):
+        embed_records(
+            [
+                {"timestamp": "2026-01-01T10:00:00Z", "text": "hello", "record_id": "same"},
+                {"timestamp": "2026-01-01T10:00:01Z", "text": "again", "record_id": "same"},
+            ],
+            embedder=lambda texts: np.asarray([[1.0, 2.0], [3.0, 4.0]]),
+        )
+
 
 def test_embed_records_builtin_provider_uses_embed_text(monkeypatch: pytest.MonkeyPatch) -> None:
     captured: dict[str, object] = {}
@@ -154,9 +169,62 @@ def test_build_embedding_map_validation_and_constant_pca_case() -> None:
         build_embedding_map(np.ones((2, 2)), method="pca", n_components=0)
     with pytest.raises(ValueError, match="Unsupported method"):
         build_embedding_map(np.ones((2, 2)), method="bogus")
+    with pytest.raises(ValueError, match="record_ids length"):
+        build_embedding_map(np.ones((2, 2)), method="pca", record_ids=["r1"])
+    with pytest.raises(ValueError, match="record_ids must be unique"):
+        build_embedding_map(np.ones((2, 2)), method="pca", record_ids=["r1", "r1"])
 
     constant = build_embedding_map(np.ones((3, 2)), method="pca", n_components=2)
     assert constant.explained_variance_ratio == [0.0, 0.0]
+
+    with pytest.raises(ValueError, match="methods must contain"):
+        compare_embedding_maps(np.ones((2, 2)), methods=[])
+    with pytest.raises(ValueError, match="methods must be unique"):
+        compare_embedding_maps(np.ones((2, 2)), methods=["pca", "PCA"])
+
+
+def test_design_space_coverage_accepts_result_objects_and_degenerate_geometry() -> None:
+    embedding = EmbeddingResult(
+        embeddings=np.asarray([[0.0, 0.0, 0.0]]),
+        record_ids=["r1"],
+        texts=["one"],
+    )
+    singleton = compute_design_space_coverage(embedding)
+
+    assert singleton["config"]["input_source"] == "embedding_result"
+    assert singleton["pairwise_spread"]["n_pairs"] == 0
+    assert singleton["warnings"]
+
+    mapped = EmbeddingMapResult(
+        coordinates=np.asarray([[0.0, 0.0], [1.0, 1.0]]),
+        record_ids=["r1", "r2"],
+        method="pca",
+    )
+    two_points = compute_design_space_coverage(mapped)
+    assert two_points["config"]["input_source"] == "embedding_map_result"
+    assert two_points["convex_hull"]["supported"] is False
+
+    collinear = compute_design_space_coverage(np.asarray([[0.0, 0.0], [1.0, 1.0], [2.0, 2.0]]))
+    assert collinear["convex_hull"]["area"] is None
+    assert any("collinear" in warning for warning in collinear["warnings"])
+
+    with pytest.raises(ValueError, match="finite numeric values"):
+        compute_design_space_coverage(np.asarray([[0.0, np.inf]]))
+
+
+def test_idea_space_trajectory_singletons_and_input_validation() -> None:
+    trajectory = compute_idea_space_trajectory(
+        np.asarray([[0.0, 0.0], [1.0, 1.0]]),
+        timestamps=[np.int64(2), None],
+        groups=["A", ""],
+    )
+
+    assert trajectory["groups"]["A"]["net_displacement"] == 0.0
+    assert trajectory["groups"]["__all__"]["ordered_timestamps"] == [None]
+    assert len(trajectory["warnings"]) == 2
+
+    with pytest.raises(ValueError, match="timestamps must have the same length"):
+        compute_idea_space_trajectory(np.ones((2, 2)), timestamps=[1])
 
 
 @pytest.mark.skipif(
@@ -224,3 +292,92 @@ def test_kmeans_validation_and_import_errors(monkeypatch: pytest.MonkeyPatch) ->
         cluster_embedding_map(np.ones((4, 2)), method="kmeans")
     with pytest.raises(ImportError, match="optional dependencies"):
         cluster_embedding_map(np.ones((4, 2)), method="agglomerative")
+
+
+def test_plot_embedding_map_validation_edges() -> None:
+    embedding_map = EmbeddingMapResult(
+        coordinates=np.asarray([[0.0, 0.0], [1.0, 1.0]]),
+        record_ids=["r1", "r2"],
+        method="pca",
+    )
+    rows = [
+        {"record_id": "r1", "trace": "t", "step": "1", "value": "1.0"},
+        {"record_id": "r2", "trace": "t", "step": "2", "value": "1.0"},
+    ]
+
+    fig, ax = plt.subplots()
+    returned_fig, returned_ax = plot_embedding_map(embedding_map, rows, value_column="value", ax=ax)
+    assert returned_fig is fig
+    assert returned_ax is ax
+    plt.close(fig)
+
+    with pytest.raises(ValueError, match="plotting requires a 2D embedding map"):
+        plot_embedding_map(
+            EmbeddingMapResult(
+                coordinates=np.ones((2, 3)),
+                record_ids=["r1", "r2"],
+                method="pca",
+            ),
+            rows,
+        )
+    plt.close("all")
+
+    with pytest.raises(ValueError, match="order_column is required"):
+        plot_embedding_map(embedding_map, rows, trace_column="trace")
+    plt.close("all")
+
+    with pytest.raises(ValueError, match="missing 'record_id'"):
+        plot_embedding_map(embedding_map, [{"trace": "t", "step": 1, "value": 1.0}])
+    plt.close("all")
+
+    with pytest.raises(ValueError, match="Duplicate record_id"):
+        plot_embedding_map(embedding_map, [rows[0], rows[0]])
+    plt.close("all")
+
+    with pytest.raises(ValueError, match="missing map record IDs"):
+        plot_embedding_map(embedding_map, [rows[0]])
+    plt.close("all")
+
+    with pytest.raises(ValueError, match="missing 'value'"):
+        plot_embedding_map(embedding_map, [{**rows[0], "value": ""}, rows[1]], value_column="value")
+    plt.close("all")
+
+    with pytest.raises(ValueError, match="non-numeric 'value'"):
+        plot_embedding_map(
+            embedding_map,
+            [{**rows[0], "value": "bad"}, rows[1]],
+            value_column="value",
+        )
+    plt.close("all")
+
+    with pytest.raises(ValueError, match="missing 'trace'"):
+        plot_embedding_map(
+            embedding_map,
+            [{**rows[0], "trace": ""}, rows[1]],
+            trace_column="trace",
+            order_column="step",
+        )
+    plt.close("all")
+
+    with pytest.raises(ValueError, match="missing 'step'"):
+        plot_embedding_map(
+            embedding_map,
+            [{**rows[0], "step": ""}, rows[1]],
+            trace_column="trace",
+            order_column="step",
+        )
+    plt.close("all")
+
+    with pytest.raises(ValueError, match="non-numeric 'value'"):
+        plot_embedding_map(
+            embedding_map,
+            [{**rows[0], "value": "bad"}, rows[1]],
+            trace_column="trace",
+            order_column="step",
+            value_column="value",
+        )
+    plt.close("all")
+
+    with pytest.raises(ValueError, match="embedding_maps must contain"):
+        plot_embedding_map_grid({}, rows)
+    plt.close("all")

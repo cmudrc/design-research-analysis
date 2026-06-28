@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from design_research_analysis import build_condition_metric_table, compare_condition_pairs
+from design_research_analysis.stats import ConditionComparisonReport
 
 
 def test_build_condition_metric_table_joins_conditions_for_run_metric() -> None:
@@ -117,6 +118,67 @@ def test_build_condition_metric_table_errors_on_missing_metric() -> None:
         )
 
 
+def test_build_condition_metric_table_validation_edges() -> None:
+    with pytest.raises(ValueError, match="runs table must contain at least one row"):
+        build_condition_metric_table([], metric="score")
+
+    with pytest.raises(ValueError, match="runs table row 0 is missing 'run_id'"):
+        build_condition_metric_table([{"condition": "A", "score": 1.0}], metric="score")
+
+    with pytest.raises(ValueError, match="missing direct condition column"):
+        build_condition_metric_table(
+            [{"run_id": "run-1", "condition": "", "score": 1.0}],
+            metric="score",
+        )
+
+    with pytest.raises(ValueError, match="no conditions table was provided"):
+        build_condition_metric_table([{"run_id": "run-1", "score": 1.0}], metric="score")
+
+    with pytest.raises(ValueError, match="missing 'condition_id'"):
+        build_condition_metric_table(
+            [{"run_id": "run-1", "score": 1.0}],
+            metric="score",
+            conditions=[{"condition_id": "cond-a", "condition": "A"}],
+        )
+
+    with pytest.raises(ValueError, match="references unknown condition_id"):
+        build_condition_metric_table(
+            [{"run_id": "run-1", "condition_id": "missing", "score": 1.0}],
+            metric="score",
+            conditions=[{"condition_id": "cond-a", "condition": "A"}],
+        )
+
+    with pytest.raises(ValueError, match="conditions row"):
+        build_condition_metric_table(
+            [{"run_id": "run-1", "condition_id": "cond-a", "score": 1.0}],
+            metric="score",
+            conditions=[{"condition_id": "cond-a", "condition": ""}],
+        )
+
+    with pytest.raises(ValueError, match="missing metric column"):
+        build_condition_metric_table(
+            [{"run_id": "run-1", "condition": "A", "score": ""}],
+            metric="score",
+        )
+
+    with pytest.raises(ValueError, match="no evaluations table was provided"):
+        build_condition_metric_table([{"run_id": "run-1", "condition": "A"}], metric="score")
+
+    with pytest.raises(ValueError, match="is missing 'run_id'"):
+        build_condition_metric_table(
+            [{"run_id": "run-1", "condition": "A"}],
+            metric="score",
+            evaluations=[{"metric_name": "score", "metric_value": 1.0}],
+        )
+
+    with pytest.raises(ValueError, match="is missing 'metric_value'"):
+        build_condition_metric_table(
+            [{"run_id": "run-1", "condition": "A"}],
+            metric="score",
+            evaluations=[{"run_id": "run-1", "metric_name": "score", "metric_value": ""}],
+        )
+
+
 def test_build_condition_metric_table_errors_on_duplicate_evaluation_metric_rows() -> None:
     runs = [{"run_id": "run-1", "condition_id": "cond-a"}]
     conditions = [{"condition_id": "cond-a", "selection_strategy": "neutral_prompt"}]
@@ -202,6 +264,7 @@ def test_compare_condition_pairs_sampled_fallback_and_pair_ordering() -> None:
         ("B", "C"),
     ]
     assert all(item.test_method == "sampled" for item in report.comparisons)
+    assert report.comparisons[0].test_name == "sampled_permutation_test"
 
     right_heavier = report.comparisons[-1]
     assert right_heavier.mean_difference < 0.0
@@ -210,6 +273,21 @@ def test_compare_condition_pairs_sampled_fallback_and_pair_ordering() -> None:
 
 
 def test_compare_condition_pairs_validation_errors() -> None:
+    with pytest.raises(ValueError, match="alternative must be one of"):
+        compare_condition_pairs([{"condition": "A", "value": 1.0}], alternative="bad")
+    with pytest.raises(ValueError, match="alpha must be in"):
+        compare_condition_pairs([{"condition": "A", "value": 1.0}], alpha=1.0)
+    with pytest.raises(ValueError, match="exact_threshold must be positive"):
+        compare_condition_pairs([{"condition": "A", "value": 1.0}], exact_threshold=0)
+    with pytest.raises(ValueError, match="n_permutations must be positive"):
+        compare_condition_pairs([{"condition": "A", "value": 1.0}], n_permutations=0)
+    with pytest.raises(ValueError, match="comparison table must contain at least one row"):
+        compare_condition_pairs([])
+    with pytest.raises(ValueError, match="missing 'condition'"):
+        compare_condition_pairs([{"value": 1.0}])
+    with pytest.raises(ValueError, match="missing 'value'"):
+        compare_condition_pairs([{"condition": "A"}])
+
     with pytest.raises(ValueError, match="At least two conditions"):
         compare_condition_pairs([{"condition": "A", "value": 1.0}])
 
@@ -229,3 +307,43 @@ def test_compare_condition_pairs_validation_errors() -> None:
                 {"condition": "B", "metric": "score_b", "value": 2.0},
             ]
         )
+
+    valid_rows = [
+        {"condition": "A", "metric": "score", "value": 1.0},
+        {"condition": "B", "metric": "score", "value": 2.0},
+    ]
+    with pytest.raises(ValueError, match="condition_pairs\\[0\\] must contain exactly two"):
+        compare_condition_pairs(valid_rows, condition_pairs=[("A", "B", "C")])  # type: ignore[list-item]
+    with pytest.raises(ValueError, match="compares 'A' against itself"):
+        compare_condition_pairs(valid_rows, condition_pairs=[("A", "A")])
+    with pytest.raises(ValueError, match="references unknown conditions"):
+        compare_condition_pairs(valid_rows, condition_pairs=[("A", "C")])
+    with pytest.raises(ValueError, match="duplicates pair"):
+        compare_condition_pairs(valid_rows, condition_pairs=[("A", "B"), ("A", "B")])
+
+
+def test_compare_condition_pairs_equal_means_less_alternative_and_empty_brief() -> None:
+    report = compare_condition_pairs(
+        [
+            {"condition": "A", "metric": "score", "value": 1.0},
+            {"condition": "A", "metric": "score", "value": 3.0},
+            {"condition": "B", "metric": "score", "value": 1.0},
+            {"condition": "B", "metric": "score", "value": 3.0},
+        ],
+        alternative="less",
+    )
+
+    comparison = report.comparisons[0]
+    assert comparison.higher_condition is None
+    assert comparison.test_method == "exact"
+    assert "significant=no" in report.render_brief()
+
+    empty = ConditionComparisonReport(
+        metric="score",
+        condition_column="condition",
+        metric_column="value",
+        alternative="two-sided",
+        alpha=0.05,
+        comparisons=(),
+    )
+    assert "No condition comparisons" in empty.render_brief()

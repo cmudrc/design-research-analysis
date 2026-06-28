@@ -28,6 +28,11 @@ def _write_csv(path: Path, rows: list[dict[str, object]]) -> None:
         writer.writerows(rows)
 
 
+def _read_csv_rows(path: Path) -> list[dict[str, str]]:
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        return list(csv.DictReader(handle))
+
+
 def _write_canonical_artifacts(output_dir: Path) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "manifest.json").write_text(
@@ -412,6 +417,52 @@ def test_build_run_metric_table_from_artifacts_rejects_blank_metric_names(
         build_run_metric_table_from_artifacts(output_dir, metrics=())
 
 
+def test_build_run_metric_table_from_artifacts_validation_edges(tmp_path: Path) -> None:
+    def make_output(name: str) -> Path:
+        output = tmp_path / name
+        _write_factorial_artifacts(output)
+        return output
+
+    missing_run_id = make_output("missing-run-id")
+    runs = _read_csv_rows(missing_run_id / "runs.csv")
+    runs[0]["run_id"] = ""
+    _write_csv(missing_run_id / "runs.csv", runs)
+    with pytest.raises(ValueError, match="missing 'run_id'"):
+        build_run_metric_table_from_artifacts(missing_run_id, metrics="quality_score")
+
+    missing_condition_id = make_output("missing-condition-id")
+    runs = _read_csv_rows(missing_condition_id / "runs.csv")
+    runs[0]["condition_id"] = ""
+    _write_csv(missing_condition_id / "runs.csv", runs)
+    with pytest.raises(ValueError, match="missing 'condition_id'"):
+        build_run_metric_table_from_artifacts(missing_condition_id, metrics="quality_score")
+
+    unknown_condition_id = make_output("unknown-condition-id")
+    runs = _read_csv_rows(unknown_condition_id / "runs.csv")
+    runs[0]["condition_id"] = "missing"
+    _write_csv(unknown_condition_id / "runs.csv", runs)
+    with pytest.raises(ValueError, match="references unknown condition_id"):
+        build_run_metric_table_from_artifacts(unknown_condition_id, metrics="quality_score")
+
+    no_metric = make_output("no-metric")
+    with pytest.raises(ValueError, match="No metric 'missing_score'"):
+        build_run_metric_table_from_artifacts(no_metric, metrics="missing_score")
+
+    duplicate_metric = make_output("duplicate-metric")
+    evaluations = _read_csv_rows(duplicate_metric / "evaluations.csv")
+    evaluations.append(dict(evaluations[0]))
+    _write_csv(duplicate_metric / "evaluations.csv", evaluations)
+    with pytest.raises(ValueError, match="Multiple metric rows"):
+        build_run_metric_table_from_artifacts(duplicate_metric, metrics="quality_score")
+
+    missing_metric_value = make_output("missing-metric-value")
+    evaluations = _read_csv_rows(missing_metric_value / "evaluations.csv")
+    evaluations[0]["metric_value"] = ""
+    _write_csv(missing_metric_value / "evaluations.csv", evaluations)
+    with pytest.raises(ValueError, match="missing a value"):
+        build_run_metric_table_from_artifacts(missing_metric_value, metrics="quality_score")
+
+
 def test_build_event_table_from_artifacts_rejects_missing_requested_context(
     tmp_path: Path,
 ) -> None:
@@ -420,6 +471,61 @@ def test_build_event_table_from_artifacts_rejects_missing_requested_context(
 
     with pytest.raises(ValueError, match="missing requested columns"):
         build_event_table_from_artifacts(output_dir, condition_columns=("missing_factor",))
+
+
+def test_build_event_table_from_artifacts_handles_session_fallback_and_context_conflicts(
+    tmp_path: Path,
+) -> None:
+    output_dir = tmp_path / "study-output"
+    _write_factorial_artifacts(output_dir)
+    events = _read_csv_rows(output_dir / "events.csv")
+    events[0]["run_id"] = ""
+    events[0]["problem_family"] = "event-family"
+    _write_csv(output_dir / "events.csv", events)
+
+    rows = build_event_table_from_artifacts(output_dir)
+
+    assert rows[0]["run_id"] == "run-1"
+    assert rows[0]["problem_family"] == "event-family"
+    assert rows[0]["run_problem_family"] == "mechanical"
+
+
+def test_build_event_table_from_artifacts_join_error_paths(tmp_path: Path) -> None:
+    missing_run_dir = tmp_path / "missing-run"
+    _write_factorial_artifacts(missing_run_dir)
+    events = _read_csv_rows(missing_run_dir / "events.csv")
+    events[0]["run_id"] = ""
+    events[0]["session_id"] = ""
+    _write_csv(missing_run_dir / "events.csv", events)
+    with pytest.raises(ValueError, match="missing 'run_id' and 'session_id'"):
+        build_event_table_from_artifacts(missing_run_dir)
+
+    unknown_run_dir = tmp_path / "unknown-run"
+    _write_factorial_artifacts(unknown_run_dir)
+    events = _read_csv_rows(unknown_run_dir / "events.csv")
+    events[0]["run_id"] = "missing"
+    _write_csv(unknown_run_dir / "events.csv", events)
+    with pytest.raises(ValueError, match="references unknown run_id"):
+        build_event_table_from_artifacts(unknown_run_dir)
+
+    no_condition_dir = tmp_path / "no-condition"
+    _write_factorial_artifacts(no_condition_dir)
+    events = _read_csv_rows(no_condition_dir / "events.csv")
+    runs = _read_csv_rows(no_condition_dir / "runs.csv")
+    events[0]["condition_id"] = ""
+    runs[0]["condition_id"] = ""
+    _write_csv(no_condition_dir / "events.csv", events)
+    _write_csv(no_condition_dir / "runs.csv", runs)
+    with pytest.raises(ValueError, match="has no 'condition_id' context"):
+        build_event_table_from_artifacts(no_condition_dir)
+
+    unknown_condition_dir = tmp_path / "unknown-condition"
+    _write_factorial_artifacts(unknown_condition_dir)
+    events = _read_csv_rows(unknown_condition_dir / "events.csv")
+    events[0]["condition_id"] = "missing"
+    _write_csv(unknown_condition_dir / "events.csv", events)
+    with pytest.raises(ValueError, match="references unknown condition_id"):
+        build_event_table_from_artifacts(unknown_condition_dir)
 
 
 def test_fit_markov_chains_from_artifacts_rejects_missing_group_column(
@@ -493,3 +599,34 @@ def test_fit_regression_from_artifacts_can_use_evaluation_metric_predictors(
     )
 
     assert result.coefficients["quality_score"] == pytest.approx(1.0)
+
+
+def test_fit_regression_from_artifacts_predictor_validation_and_full_dummies(
+    tmp_path: Path,
+) -> None:
+    output_dir = tmp_path / "study-output"
+    _write_factorial_artifacts(output_dir)
+
+    with pytest.raises(ValueError, match="categorical_predictors must be a subset"):
+        fit_regression_from_artifacts(
+            output_dir,
+            outcome="quality_score",
+            predictors=("model_size_b",),
+            categorical_predictors=("task_family",),
+        )
+
+    with pytest.raises(ValueError, match="must be numeric or listed"):
+        fit_regression_from_artifacts(
+            output_dir,
+            outcome="quality_score",
+            predictors=("task_family",),
+        )
+
+    result = fit_regression_from_artifacts(
+        output_dir,
+        outcome="quality_score",
+        predictors=("task_family",),
+        categorical_predictors=("task_family",),
+        drop_first=False,
+    )
+    assert set(result.coefficients) == {"task_family[mechanical]", "task_family[thermal]"}

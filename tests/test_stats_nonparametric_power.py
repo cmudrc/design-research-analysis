@@ -98,8 +98,19 @@ def test_bootstrap_ci_additional_paths() -> None:
     result = bootstrap_ci([1, 2, 3, 4], stat="median", n_resamples=200, seed=1)
     assert result["method_used"] == "percentile"
 
+    difference = bootstrap_ci(
+        [1, 2, 3, 4],
+        y=[2, 3, 4, 5],
+        stat="diff_medians",
+        n_resamples=200,
+        seed=4,
+    )
+    assert difference["estimate"] == -1.0
+
     with pytest.raises(ValueError, match="n_resamples must be positive"):
         bootstrap_ci([1, 2], n_resamples=0)
+    with pytest.raises(ValueError, match="x must contain at least one value"):
+        bootstrap_ci([], n_resamples=10)
     with pytest.raises(ValueError, match="ci must be in"):
         bootstrap_ci([1, 2], ci=1.0)
     with pytest.raises(ValueError, match="method must be one of"):
@@ -131,6 +142,12 @@ def test_bootstrap_bca_and_rank_test_variants() -> None:
     assert kr["test"] == "kruskal"
     fr = rank_tests_one_stop([1, 2], groups=[[1, 2], [1, 2], [2, 3]], kind="friedman")
     assert fr["test"] == "friedman"
+
+    auto_wilcoxon = rank_tests_one_stop([1, 2, 3], [1.1, 2.1, 3.1], paired=True)
+    assert auto_wilcoxon["test"] == "wilcoxon"
+
+    auto_friedman = rank_tests_one_stop([1, 2], groups=[[1, 2], [2, 3], [3, 4]], paired=True)
+    assert auto_friedman["test"] == "friedman"
 
 
 @pytest.mark.skipif(not _HAS_SCIPY, reason="scipy unavailable")
@@ -215,6 +232,16 @@ class _FakeOneSamplePower:
         return 0.84 if effect_size >= 0.3 else 0.6
 
 
+class _LowPower:
+    def solve_power(self, **kwargs) -> float:
+        _ = kwargs
+        return 10.0
+
+    def power(self, **kwargs) -> float:
+        _ = kwargs
+        return 0.1
+
+
 def test_power_functions_with_fake_engines(monkeypatch) -> None:
     monkeypatch.setattr(
         stats_module,
@@ -262,3 +289,20 @@ def test_power_input_validation_errors(monkeypatch) -> None:
         power_curve([], n=10, test="paired_t")
     with pytest.raises(ValueError, match="n must be greater than 1"):
         power_curve([0.2], n=1, test="paired_t")
+    with pytest.raises(ValueError, match="n must be greater than 1"):
+        minimum_detectable_effect(1, test="paired_t")
+
+
+def test_power_edge_allocation_and_unreachable_target(monkeypatch) -> None:
+    monkeypatch.setattr(
+        stats_module,
+        "_load_power_engines",
+        lambda: (_FakeTwoSamplePower(), _FakeOneSamplePower()),
+    )
+
+    curve = power_curve([0.4], n=2, test="two_sample_t", ratio=0.01)
+    assert curve.iloc[0]["power"] == 0.82
+
+    monkeypatch.setattr(stats_module, "_load_power_engines", lambda: (_LowPower(), _LowPower()))
+    with pytest.raises(ValueError, match="Target power is unreachable"):
+        minimum_detectable_effect(20, test="paired_t", power=0.8)
