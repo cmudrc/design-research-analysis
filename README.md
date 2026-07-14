@@ -7,13 +7,6 @@
 [![PyPI Version](https://img.shields.io/pypi/v/design-research-analysis.svg)](https://pypi.org/project/design-research-analysis/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/design-research-analysis.svg)](https://pypi.org/project/design-research-analysis/)
 
-<!-- release-callout:start -->
-> [!IMPORTANT]
-> Current monthly release: [Carnegie Calculus - May 2026](https://github.com/cmudrc/design-research-analysis/milestone/3)  
-> Due: June 1, 2026  
-> Tracks: May 2026 work
-<!-- release-callout:end -->
-
 `design-research-analysis` is the unified-table analysis layer in the cmudrc design research ecosystem.
 
 It provides typed, reusable workflows for sequence, language, embedding-map, and statistical analysis over recurring event logs.
