@@ -278,6 +278,27 @@ def test_load_experiment_artifacts_requires_json_object_manifest(tmp_path: Path)
         load_experiment_artifacts(output_dir)
 
 
+def test_load_experiment_artifacts_rejects_unsupported_schema_version(tmp_path: Path) -> None:
+    output_dir = tmp_path / "study-output"
+    _write_canonical_artifacts(output_dir)
+    (output_dir / "manifest.json").write_text(
+        json.dumps({"schema_version": "9.0.0", "study_id": "demo-study"}),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match=r"Unsupported.*9\.0\.0.*0\.1\.0"):
+        load_experiment_artifacts(output_dir)
+
+
+def test_validate_experiment_events_requires_versioned_manifest(tmp_path: Path) -> None:
+    output_dir = tmp_path / "study-output"
+    _write_canonical_artifacts(output_dir)
+    (output_dir / "manifest.json").unlink()
+
+    with pytest.raises(ValueError, match=r"manifest\.json"):
+        validate_experiment_events(output_dir / "events.csv")
+
+
 def test_validate_experiment_events_uses_unified_table_validation(tmp_path: Path) -> None:
     output_dir = tmp_path / "study-output"
     _write_canonical_artifacts(output_dir)

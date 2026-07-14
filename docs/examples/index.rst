@@ -78,5 +78,6 @@ Full Catalog
    language_custom_embedder
    mechanical_design_review_analysis
    sequence_from_table
+   stats_interrater_reliability
    stats_regression
    unified_table_validation

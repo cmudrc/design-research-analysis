@@ -12,6 +12,8 @@ from typing import TYPE_CHECKING, Any, cast
 import numpy as np
 
 from ._comparison import ComparableResultMixin
+from .reliability import InterraterReliabilityResult as InterraterReliabilityResult
+from .reliability import compute_interrater_reliability as compute_interrater_reliability
 from .table import UnifiedTableConfig, coerce_unified_table
 
 if TYPE_CHECKING:

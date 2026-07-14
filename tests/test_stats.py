@@ -5,7 +5,12 @@ import importlib.util
 import numpy as np
 import pytest
 
-from design_research_analysis.stats import compare_groups, fit_mixed_effects, fit_regression
+from design_research_analysis.stats import (
+    compare_groups,
+    compute_interrater_reliability,
+    fit_mixed_effects,
+    fit_regression,
+)
 
 
 @pytest.mark.skipif(importlib.util.find_spec("scipy") is None, reason="scipy unavailable")
@@ -18,6 +23,84 @@ def test_compare_groups_returns_expected_directionality() -> None:
     assert result.method == "ttest"
     assert result.group_means["B"] > result.group_means["A"]
     assert result.p_value < 0.05
+
+
+def test_compute_interrater_reliability_matches_nominal_reference_values() -> None:
+    cohen = compute_interrater_reliability(
+        [
+            ["yes", "yes"],
+            ["yes", "yes"],
+            ["yes", "no"],
+            ["no", "no"],
+            ["no", "no"],
+        ],
+        method="cohen_kappa",
+    )
+    fleiss = compute_interrater_reliability(
+        [
+            ["a", "a", "a"],
+            ["a", "a", "b"],
+            ["b", "b", "b"],
+            ["a", "b", "b"],
+        ],
+        method="fleiss_kappa",
+    )
+    alpha = compute_interrater_reliability(
+        [
+            ["a", "a", None],
+            ["a", "b", "b"],
+            ["b", "b", None],
+            ["a", "b", "a"],
+        ],
+        method="krippendorff_alpha",
+    )
+
+    assert cohen.coefficient == pytest.approx(0.6153846154)
+    assert fleiss.coefficient == pytest.approx(1.0 / 3.0)
+    assert alpha.coefficient == pytest.approx(0.28)
+    assert alpha.n_items_used == 4
+    assert alpha.n_observations == 10
+    assert alpha.missing_ratings == 2
+
+
+def test_compute_interrater_reliability_bootstraps_items_deterministically() -> None:
+    result = compute_interrater_reliability(
+        [
+            ["a", "a", "a"],
+            ["a", "a", "b"],
+            ["b", "b", "b"],
+            ["a", "b", "b"],
+            ["a", "a", "a"],
+            ["b", "b", "b"],
+        ],
+        method="krippendorff_alpha",
+        n_bootstrap=100,
+        seed=17,
+    )
+
+    assert result.confidence_interval is not None
+    assert result.bootstrap_samples >= 10
+    assert result.to_dict()["confidence_interval"] is not None
+
+
+@pytest.mark.parametrize(
+    ("codings", "method", "message"),
+    [
+        ([["a"], ["b"]], "cohen_kappa", "at least two raters"),
+        ([["a", "a"], ["a"]], "cohen_kappa", "rectangular"),
+        ([["a", "a", "a"], ["b", "b", "b"]], "cohen_kappa", "exactly two raters"),
+        ([["a", "a"], ["a", "a"]], "fleiss_kappa", "all usable ratings"),
+        ([["a", None], ["b", None]], "krippendorff_alpha", "two observed ratings"),
+        ([["a", "b"], ["b", "a"]], "unknown", "Unsupported method"),
+    ],
+)
+def test_compute_interrater_reliability_validates_inputs(
+    codings: list[list[str | None]],
+    method: str,
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        compute_interrater_reliability(codings, method=method)
 
 
 def test_fit_regression_recovers_linear_relationship() -> None:

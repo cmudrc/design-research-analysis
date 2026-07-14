@@ -63,10 +63,12 @@ from .sequence import (
     plot_transition_matrix,
 )
 from .stats import (
+    InterraterReliabilityResult,
     bootstrap_ci,
     build_condition_metric_table,
     compare_condition_pairs,
     compare_groups,
+    compute_interrater_reliability,
     estimate_sample_size,
     fit_mixed_effects,
     fit_regression,
@@ -95,6 +97,7 @@ __all__ = [
     "EmbeddingMapResult",
     "EmbeddingResult",
     "GaussianHMMResult",
+    "InterraterReliabilityResult",
     "MarkovChainResult",
     "UnifiedTableConfig",
     "UnifiedTableValidationReport",
@@ -117,6 +120,7 @@ __all__ = [
     "compute_design_space_coverage",
     "compute_divergence_convergence",
     "compute_idea_space_trajectory",
+    "compute_interrater_reliability",
     "compute_language_convergence",
     "compute_semantic_distance_trajectory",
     "dataset",
