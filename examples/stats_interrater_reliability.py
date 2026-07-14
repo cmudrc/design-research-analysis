@@ -43,7 +43,7 @@ def main() -> None:
 
     for method in ("cohen_kappa", "fleiss_kappa", "krippendorff_alpha"):
         method_codings = [row[:2] for row in codings] if method == "cohen_kappa" else codings
-        result = dran.compute_interrater_reliability(
+        result: dran.InterraterReliabilityResult = dran.compute_interrater_reliability(
             method_codings,
             method=method,
             n_bootstrap=200,

@@ -30,7 +30,7 @@ Shared Module Baseline
    * - Coverage badge
      - ``scripts/generate_coverage_badge.py``
      - ``ci.yml``
-     - Coverage status stays synchronized with the enforced 90% floor.
+     - Coverage status stays synchronized with the enforced 95% floor.
    * - Example docs generation
      - ``scripts/generate_example_docs.py``
      - ``examples.yml``

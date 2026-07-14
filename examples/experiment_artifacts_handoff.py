@@ -155,10 +155,12 @@ def _write_artifacts(output_dir: Path) -> None:
 
 def main() -> None:
     """Run artifact-first analysis workflows over one tiny export."""
+    print("Integration module:", dran.integration.__name__)
     with TemporaryDirectory() as tmp:
         output_dir = Path(tmp) / "study-output"
         _write_artifacts(output_dir)
 
+        artifacts = dran.load_experiment_artifacts(output_dir)
         validation = dran.validate_experiment_events(output_dir / "events.csv")
         joined_events = dran.build_event_table_from_artifacts(output_dir)
         metric_rows = dran.build_condition_metric_table_from_artifacts(
@@ -195,6 +197,7 @@ def main() -> None:
             categorical_predictors=("task_family",),
         )
 
+        print("Artifact tables:", ", ".join(sorted(artifacts)))
         print("Events valid:", validation.is_valid, f"rows={validation.n_rows}")
         print("Joined event rows:", len(joined_events))
         print("Metric rows:", len(metric_rows), f"run rows={len(run_metrics)}")
