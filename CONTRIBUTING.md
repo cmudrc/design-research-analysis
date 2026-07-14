@@ -2,8 +2,9 @@
 
 ## Development Setup
 
-For a step-by-step VS Code setup, including interpreter selection, optional
-`uv` usage, analysis extras, runtime caches, and troubleshooting, see
+For a step-by-step VS Code setup, including the PyPI install path, source
+checkout path, interpreter selection, analysis extras, runtime caches, and
+troubleshooting, see
 [VS Code Start](docs/vscode_start.rst).
 
 ```bash

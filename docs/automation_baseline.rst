@@ -6,8 +6,8 @@ This page documents the shared docs and CI baseline for
 
 The analysis repo now matches the common module-repo posture: public docs stay
 in sync with README and examples, and example health is reported explicitly.
-Release state is tracked in GitHub milestones and release branches rather than
-generated README callouts.
+Release state is tracked through package versions, GitHub Releases, and focused
+PRs rather than generated README callouts or default monthly milestones.
 
 Shared Module Baseline
 ----------------------
