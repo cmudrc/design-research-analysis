@@ -719,6 +719,7 @@ def build_embedding_map(
         reducer = umap.UMAP(
             n_components=n_components,
             random_state=random_state,
+            n_jobs=1,
             n_neighbors=n_neighbors,
             min_dist=min_dist,
         )

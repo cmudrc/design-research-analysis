@@ -143,3 +143,75 @@ def test_generate_codebook_accepts_csv_path(tmp_path) -> None:
     codebook = generate_codebook(csv_path)
 
     assert list(codebook["column"]) == ["first", "second"]
+
+
+def test_dataset_input_formats_and_errors(tmp_path) -> None:
+    """Dataset coercion should support documented paths and reject malformed JSON."""
+    tsv_path = tmp_path / "dataset.tsv"
+    tsv_path.write_text("score\tgroup\n1\ta\n", encoding="utf-8")
+    assert profile_dataframe(tsv_path)["n_rows"] == 1
+
+    columnar_path = tmp_path / "columnar.json"
+    columnar_path.write_text('{"score": [1, 2]}', encoding="utf-8")
+    assert profile_dataframe(columnar_path)["n_rows"] == 2
+
+    non_object_rows = tmp_path / "bad-rows.json"
+    non_object_rows.write_text("[1, 2]", encoding="utf-8")
+    with pytest.raises(ValueError, match="list of objects"):
+        profile_dataframe(non_object_rows)
+
+    scalar_path = tmp_path / "scalar.json"
+    scalar_path.write_text("1", encoding="utf-8")
+    with pytest.raises(ValueError, match="columnar object"):
+        profile_dataframe(scalar_path)
+    with pytest.raises(ValueError, match="Unsupported dataset input"):
+        profile_dataframe(tmp_path / "dataset.txt")
+    with pytest.raises(TypeError, match="pandas DataFrame"):
+        profile_dataframe(object())  # type: ignore[arg-type]
+
+
+def test_dataset_dtype_inference_covers_boolean_category_and_datetime() -> None:
+    """Profiles should expose stable names for pandas extension dtypes."""
+    frame = pd.DataFrame(
+        {
+            "flag": pd.Series([True, False], dtype="boolean"),
+            "category": pd.Series(["a", "b"], dtype="category"),
+            "when": pd.to_datetime(["2026-01-01", "2026-01-02"]),
+            "value": pd.Series([1.5, 2.5], dtype="float64"),
+        }
+    )
+    columns = profile_dataframe(frame)["columns"]
+    assert columns["flag"]["inferred_dtype"] == "boolean"
+    assert columns["category"]["inferred_dtype"] == "category"
+    assert columns["when"]["inferred_dtype"] == "datetime"
+    assert columns["value"]["inferred_dtype"] == "numeric"
+
+
+def test_validate_dataframe_reports_every_rule_family() -> None:
+    """Schema diagnostics should cover malformed declarations and value constraints."""
+    frame = pd.DataFrame(
+        {
+            "score": [0, 20],
+            "label": ["a", "bad"],
+            "nullable": [1.0, None],
+            "unknown_dtype": [1, 2],
+        }
+    )
+    result = validate_dataframe(
+        frame,
+        {
+            "not_a_mapping": "required",
+            "score": {"min": 1, "max": 10, "regex": r"\d+"},
+            "label": {"allowed": "a", "regex": r"[a-z]"},
+            "nullable": {"nullable": False},
+            "unknown_dtype": {"dtype": "imaginary"},
+        },
+    )
+    errors = "\n".join(result["errors"])
+    assert "must be a mapping" in errors
+    assert "below the allowed minimum" in errors
+    assert "above the allowed maximum" in errors
+    assert "cannot use 'regex'" in errors
+    assert "outside the allowed set" in errors
+    assert "contains null values" in errors
+    assert "unsupported dtype" in errors

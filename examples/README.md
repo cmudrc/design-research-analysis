@@ -13,6 +13,7 @@ docstring via ``scripts/generate_example_docs.py``.
 - `embedding_maps_trajectories.py`: trace-aware embedding maps with value overlays and comparison grids.
 - `idea_space_metrics.py`: projection-space coverage, trajectory diagnostics, and plotting helpers.
 - `stats_regression.py`: novelty-vs-iteration regression for prototype runs.
+- `stats_interrater_reliability.py`: Cohen, Fleiss, and nominal Krippendorff reliability for protocol codings.
 - `condition_pair_significance.py`: join canonical experiment exports into run-level metrics and render pairwise significance summaries.
 - `experiment_artifacts_handoff.py`: artifact-first condition, sequence, and regression analyses over canonical experiment exports.
 - `lab_study_pipeline.py`: prompt-framing experiment pipeline with table checks, language/sequence/stats, and provenance manifest output.

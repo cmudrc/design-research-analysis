@@ -32,7 +32,8 @@ Top-level groups:
   ``plot_embedding_map``, ``plot_embedding_map_grid``
 - Statistics: ``compare_groups``, ``fit_regression``, ``fit_mixed_effects``,
   ``permutation_test``, ``build_condition_metric_table``,
-  ``compare_condition_pairs``, ``bootstrap_ci``, ``rank_tests_one_stop``,
+  ``compare_condition_pairs``, ``compute_interrater_reliability``,
+  ``InterraterReliabilityResult``, ``bootstrap_ci``, ``rank_tests_one_stop``,
   ``estimate_sample_size``, ``power_curve``, ``minimum_detectable_effect``
 - Dataset + runtime: ``profile_dataframe``, ``validate_dataframe``, ``generate_codebook``,
   ``capture_run_context``, ``attach_provenance``, ``is_notebook``,

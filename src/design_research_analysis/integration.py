@@ -27,6 +27,7 @@ _ANALYSIS_ARTIFACT_FILES = (
     "events.csv",
     "evaluations.csv",
 )
+_SUPPORTED_EXPERIMENT_SCHEMA_VERSIONS = frozenset({"0.1.0"})
 _CONDITION_CONTEXT_EXCLUDE_COLUMNS = frozenset(
     {
         "study_id",
@@ -67,6 +68,7 @@ def validate_experiment_events(path: str | Path) -> UnifiedTableValidationReport
         ValueError: If ``path`` does not resolve to a canonical ``events.csv`` artifact.
     """
     events_path = _resolve_events_path(path)
+    _validate_artifact_manifest(events_path.parent)
     rows = _read_csv(events_path)
     return validate_unified_table(coerce_unified_table(rows))
 
@@ -395,15 +397,19 @@ def _load_artifact_rows(
 ) -> dict[str, Any]:
     """Load the requested canonical artifacts from one export directory."""
     output_dir = _resolve_output_dir(path)
-    _require_artifacts(output_dir, artifact_names)
+    _require_artifacts(output_dir, _dedupe(("manifest.json", *artifact_names)))
+    manifest = _validate_artifact_manifest(output_dir)
     rows: dict[str, Any] = {}
     for artifact_name in artifact_names:
         artifact_path = output_dir / artifact_name
-        rows[artifact_name] = (
-            _read_json(artifact_path)
-            if artifact_path.suffix.lower() == ".json"
-            else _read_csv(artifact_path)
-        )
+        if artifact_name == "manifest.json":
+            rows[artifact_name] = manifest
+        else:
+            rows[artifact_name] = (
+                _read_json(artifact_path)
+                if artifact_path.suffix.lower() == ".json"
+                else _read_csv(artifact_path)
+            )
     return rows
 
 
@@ -426,6 +432,25 @@ def _read_json(path: Path) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError(f"Expected JSON object payload in '{path.name}'.")
     return payload
+
+
+def _validate_artifact_manifest(output_dir: Path) -> dict[str, Any]:
+    """Validate the version authority for one canonical experiment export."""
+    manifest_path = output_dir / "manifest.json"
+    if not manifest_path.is_file():
+        raise ValueError("Missing canonical experiment artifact: manifest.json.")
+
+    manifest = _read_json(manifest_path)
+    schema_version = manifest.get("schema_version")
+    if schema_version not in _SUPPORTED_EXPERIMENT_SCHEMA_VERSIONS:
+        supported = ", ".join(sorted(_SUPPORTED_EXPERIMENT_SCHEMA_VERSIONS))
+        raise ValueError(
+            "Unsupported experiment artifact schema_version "
+            f"{schema_version!r}. Supported versions: {supported}."
+        )
+    if _is_blank(manifest.get("study_id")):
+        raise ValueError("manifest.json is missing a non-empty study_id.")
+    return manifest
 
 
 def _rows(data: Any, *, table_name: str) -> list[dict[str, Any]]:

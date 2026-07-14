@@ -10,6 +10,7 @@ RUNTIME_CACHE_DIR ?= artifacts/runtime
 MPLCONFIGDIR ?= $(RUNTIME_CACHE_DIR)/matplotlib
 XDG_CACHE_HOME ?= $(RUNTIME_CACHE_DIR)/xdg-cache
 MPLBACKEND ?= Agg
+COVERAGE_MIN ?= 95
 
 export MPLCONFIGDIR
 export XDG_CACHE_HOME
@@ -29,7 +30,7 @@ help:
 	@echo "  run-example      Execute the bundled example script."
 	@echo "  run-examples     Execute all example scripts."
 	@echo "  examples-test    Execute all bundled example scripts."
-	@echo "  examples-coverage Check public API coverage across examples."
+	@echo "  examples-coverage Require every public API export to appear in an example."
 	@echo "  examples-metrics Generate example and public-API badge artifacts."
 	@echo "  docs             Build the HTML docs."
 	@echo "  release-check    Build artifacts, validate metadata, and smoke-install the wheel."
@@ -66,8 +67,8 @@ qa: lint fmt-check type test
 
 coverage: check-python runtime-cache
 	mkdir -p artifacts/coverage
-	PYTHONPATH=src $(PYTEST) --cov=src/design_research_analysis --cov-report=term --cov-report=json:artifacts/coverage/coverage.json -q
-	$(PYTHON) scripts/check_coverage_thresholds.py --coverage-json artifacts/coverage/coverage.json --minimum 90
+	PYTHONPATH=src $(PYTEST) --cov=src/design_research_analysis --cov-fail-under=$(COVERAGE_MIN) --cov-report=term --cov-report=json:artifacts/coverage/coverage.json -q
+	$(PYTHON) scripts/check_coverage_thresholds.py --coverage-json artifacts/coverage/coverage.json --minimum $(COVERAGE_MIN)
 
 docstrings-check: check-python
 	$(PYTHON) scripts/check_google_docstrings.py
@@ -84,8 +85,8 @@ examples-test: check-python runtime-cache
 
 run-examples: examples-test
 
-examples-coverage: check-python
-	$(PYTHON) scripts/check_example_api_coverage.py --minimum 90
+examples-coverage: check-python examples-metrics
+	$(PYTHON) scripts/check_example_api_coverage.py --minimum 100
 
 examples-metrics: check-python runtime-cache examples-test
 	$(PYTHON) scripts/generate_examples_metrics.py

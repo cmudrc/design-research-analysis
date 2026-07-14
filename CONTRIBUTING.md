@@ -15,11 +15,17 @@ make dev
 
 The preferred maintainer interpreter is set in `.python-version` (`3.12`).
 
-Before cutting a release, run:
+## Release Publishing
 
-```bash
-make release-check
-```
+Before cutting a release, run `make release-check`. The GitHub `Publish`
+workflow builds and validates distributions before any upload:
+
+- Publishing a GitHub Release tagged `v{package-version}` publishes to PyPI.
+- A manual workflow run is build-only by default.
+- A recovery publish requires selecting the release tag and explicitly setting
+  `publish=true`; publishing from a branch is rejected.
+- Every publishing path rejects a tag that differs from the version in
+  `pyproject.toml`.
 
 ## Local Quality Checks
 
@@ -36,8 +42,11 @@ make docs-check
 make docs
 ```
 
-The repository maintains a 90% total coverage floor, and `make coverage`
-enforces that threshold locally using the same JSON-based check as CI.
+## Quality Gates
+
+- `make coverage` enforces at least 95% total line coverage for the default deterministic suite.
+- `make examples-test` executes the checked-in runnable examples.
+- `make examples-coverage` requires every curated top-level `__all__` export to appear in at least one runnable example.
 
 Optional but useful:
 
