@@ -30,11 +30,12 @@ the run, condition, event, and evaluation joins internally.
 Artifact Contract Version
 -------------------------
 
-The current adapter supports experiment artifact schema ``0.1.0``. Every
-artifact-first helper validates ``manifest.json`` before reading tables and
-raises a clear error for missing or unsupported versions. This keeps schema
-changes explicit without importing ``design-research-experiments`` or coupling
-analysis code to its internal Python models.
+The current adapter supports experiment artifact schemas ``0.1.0`` and
+``0.2.0``. Every artifact-first helper validates ``manifest.json`` before
+reading tables and raises a clear error for missing or unsupported versions.
+This keeps schema changes explicit without importing
+``design-research-experiments`` or coupling analysis code to its internal
+Python models.
 
 Canonical Input Files
 ---------------------
