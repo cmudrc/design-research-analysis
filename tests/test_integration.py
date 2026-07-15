@@ -28,10 +28,10 @@ def _write_csv(path: Path, rows: list[dict[str, object]]) -> None:
         writer.writerows(rows)
 
 
-def _write_canonical_artifacts(output_dir: Path) -> None:
+def _write_canonical_artifacts(output_dir: Path, *, schema_version: str = "0.1.0") -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "manifest.json").write_text(
-        json.dumps({"schema_version": "0.1.0", "study_id": "demo-study"}),
+        json.dumps({"schema_version": schema_version, "study_id": "demo-study"}),
         encoding="utf-8",
     )
     _write_csv(
@@ -231,12 +231,16 @@ def _write_factorial_artifacts(output_dir: Path) -> None:
     )
 
 
-def test_load_experiment_artifacts_reads_canonical_export_directory(tmp_path: Path) -> None:
+@pytest.mark.parametrize("schema_version", ["0.1.0", "0.2.0"])
+def test_load_experiment_artifacts_reads_supported_canonical_export(
+    tmp_path: Path, schema_version: str
+) -> None:
     output_dir = tmp_path / "study-output"
-    _write_canonical_artifacts(output_dir)
+    _write_canonical_artifacts(output_dir, schema_version=schema_version)
 
     artifacts = load_experiment_artifacts(output_dir)
 
+    assert artifacts["manifest.json"]["schema_version"] == schema_version
     assert artifacts["manifest.json"]["study_id"] == "demo-study"
     assert artifacts["runs.csv"][0]["run_id"] == "run-1"
     assert artifacts["events.csv"][0]["event_type"] == "assistant_output"
@@ -286,7 +290,7 @@ def test_load_experiment_artifacts_rejects_unsupported_schema_version(tmp_path: 
         encoding="utf-8",
     )
 
-    with pytest.raises(ValueError, match=r"Unsupported.*9\.0\.0.*0\.1\.0"):
+    with pytest.raises(ValueError, match=r"Unsupported.*9\.0\.0.*0\.1\.0, 0\.2\.0"):
         load_experiment_artifacts(output_dir)
 
 

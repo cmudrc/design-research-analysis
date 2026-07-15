@@ -27,7 +27,7 @@ _ANALYSIS_ARTIFACT_FILES = (
     "events.csv",
     "evaluations.csv",
 )
-_SUPPORTED_EXPERIMENT_SCHEMA_VERSIONS = frozenset({"0.1.0"})
+_SUPPORTED_EXPERIMENT_SCHEMA_VERSIONS = frozenset({"0.1.0", "0.2.0"})
 _CONDITION_CONTEXT_EXCLUDE_COLUMNS = frozenset(
     {
         "study_id",
