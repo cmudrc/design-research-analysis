@@ -12,6 +12,7 @@ docstring via ``scripts/generate_example_docs.py``.
 - `language_custom_embedder.py`: run convergence analysis with deterministic in-house embeddings.
 - `embedding_maps_trajectories.py`: trace-aware embedding maps with value overlays and comparison grids.
 - `idea_space_metrics.py`: projection-space coverage, trajectory diagnostics, and plotting helpers.
+- `mechanical_design_review_analysis.py`: combine process, condition-metric, language, and visualization helpers for a bracket design review.
 - `stats_regression.py`: novelty-vs-iteration regression for prototype runs.
 - `stats_interrater_reliability.py`: Cohen, Fleiss, and nominal Krippendorff reliability for protocol codings.
 - `condition_pair_significance.py`: join canonical experiment exports into run-level metrics and render pairwise significance summaries.
@@ -27,8 +28,13 @@ import design_research_analysis as dran
 Run the full example suite:
 
 ```bash
+python -m pip install -e ".[dev,data,stats,lang,maps,seq]"
 make run-examples
 ```
+
+Several individual scripts use only the base install, but the full suite
+intentionally covers optional families. Text embeddings in these examples use
+deterministic custom embedders, so the suite does not download a model.
 
 Check public API coverage across examples:
 

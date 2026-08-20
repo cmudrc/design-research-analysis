@@ -126,6 +126,9 @@ Experiment Condition Comparison Recipe
 Dataset And Provenance Recipe
 -----------------------------
 
+The DataFrame profiling, validation, and codebook calls in this recipe require
+``design-research-analysis[data]``.
+
 .. code-block:: python
 
    import pandas as pd

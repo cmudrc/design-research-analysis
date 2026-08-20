@@ -4,9 +4,9 @@ Unified Table Schema
 Purpose
 -------
 
-The unified table schema is the canonical input contract across all analysis
+The unified table schema is the loose, generic input contract across analysis
 families in this package. It enables repeatable pipelines while still allowing
-loose real-world data.
+real-world data that does not come from the experiments exporter.
 
 If your input originated in ``design-research-experiments``, see
 :doc:`experiments_handoff` for the recommended ``events.csv`` validation and
@@ -30,6 +30,7 @@ Strongly recommended:
 Optional:
 
 - ``meta_json``
+- study-specific context columns
 
 Derived in the common experiments handoff when needed:
 
@@ -50,13 +51,15 @@ identifiers.
 Use :doc:`experiments_handoff` when the input came from
 ``design-research-experiments`` and you want the concrete ``events.csv`` ->
 validation -> downstream-analysis path rather than the abstract schema view.
+Artifact-directory helpers add stricter referential preconditions: an event
+must carry ``run_id`` or a ``session_id`` matching ``runs.csv.run_id``. Those
+join rules are intentionally not imposed on generic unified tables.
 
 Key API surfaces:
 
 - :func:`design_research_analysis.coerce_unified_table`
 - :func:`design_research_analysis.validate_unified_table`
 - :func:`design_research_analysis.derive_columns`
-- ``design_research_analysis.table.group_rows``
 
 Example
 -------

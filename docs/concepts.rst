@@ -17,7 +17,7 @@ interpretability for actor-level, session-level, and event-type analyses.
 Derivation and Validation
 -------------------------
 
-Real research datasets are often incomplete or heterogenous. Validation and
+Real research datasets are often incomplete or heterogeneous. Validation and
 mapper-based derivation formalize how missing analytical fields are resolved,
 which improves reproducibility and reduces undocumented data wrangling.
 

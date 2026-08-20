@@ -22,7 +22,8 @@ Shared Module Baseline
    * - Docs consistency
      - ``scripts/check_docs_consistency.py``
      - ``ci.yml``
-     - README, docs landing pages, and generated example references stay aligned.
+     - Internal navigation resolves, every top-level ``__all__`` export appears
+       in the API inventory, and every checked-in example appears in its README.
    * - Docstring policy
      - ``scripts/check_google_docstrings.py``
      - ``ci.yml``
@@ -33,24 +34,28 @@ Shared Module Baseline
      - Coverage status stays synchronized with the enforced 95% floor.
    * - Example docs generation
      - ``scripts/generate_example_docs.py``
-     - ``examples.yml``
+     - ``ci.yml`` and ``docs-pages.yml``
      - Checked-in examples remain represented in the published docs.
    * - Example reporting
      - ``scripts/generate_examples_metrics.py`` and ``scripts/generate_examples_badges.py``
-     - ``examples.yml``
+     - ``ci.yml``
      - Example pass/fail and public-API coverage badges use the shared family format.
    * - Example boundary checks
      - ``scripts/check_example_api_coverage.py``
-     - ``examples.yml``
-     - Examples continue to exercise the documented public import surface.
+     - ``examples.yml`` and ``ci.yml``
+     - The runnable suite continues to reference the supported top-level import
+       surface at the configured coverage threshold.
 
 Workflow Responsibilities
 -------------------------
 
-- ``ci.yml`` owns lint, type, test, coverage, docs-consistency, and docstring checks.
-- ``examples.yml`` owns example execution, example-doc generation, and example-derived badge metrics.
-- ``docs-pages.yml`` owns the published docs build.
-- ``workflow.yml`` remains the aggregate maintainer workflow entry point.
+- ``ci.yml`` owns lint, type, test, coverage, generated-doc consistency,
+  docstring checks, example boundary checks, and example-derived badge metrics.
+- ``examples.yml`` owns the standalone example-execution and public-API coverage checks.
+- ``docs-pages.yml`` owns example-doc generation and the strict published docs build.
+  Link checking remains the explicit ``make docs-linkcheck`` target.
+- ``workflow.yml`` owns release builds and authorized PyPI publishing; it is not
+  an aggregate validation workflow.
 
 Analysis-Specific Notes
 -----------------------

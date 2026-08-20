@@ -7,7 +7,10 @@
 [![PyPI Version](https://img.shields.io/pypi/v/design-research-analysis.svg)](https://pypi.org/project/design-research-analysis/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/design-research-analysis.svg)](https://pypi.org/project/design-research-analysis/)
 
-`design-research-analysis` is the unified-table analysis layer in the cmudrc design research ecosystem.
+`design-research-analysis` is the analysis and interpretation layer
+in the CMU Design Research Collective design-research ecosystem. It turns recurring
+design-study records and exported experiment artifacts into reproducible
+findings.
 
 It provides typed, reusable workflows for sequence, language, embedding-map, and statistical analysis over recurring event logs.
 
@@ -21,7 +24,7 @@ Run `make coverage`, `make examples-test`, and `make examples-coverage` to repro
 
 ## Overview
 
-This package centers on reproducible analysis workflows with a small top-level API:
+This package centers on reproducible analysis workflows with a curated top-level API:
 
 - Unified-table coercion, validation, and mapper-based derived columns
 - Dataset profiling, schema checks, and codebook generation
@@ -45,17 +48,32 @@ Install from PyPI:
 
 ```bash
 python -m pip install --upgrade pip
-pip install design-research-analysis
+python -m pip install design-research-analysis
+```
+
+The base install supports unified-table validation and Markov analysis:
+
+```python
+import design_research_analysis as dran
+
+rows = [
+    {"timestamp": "2026-01-01T00:00:00Z", "session_id": "s1", "event_type": "ideate"},
+    {"timestamp": "2026-01-01T00:00:05Z", "session_id": "s1", "event_type": "refine"},
+]
+report = dran.validate_unified_table(rows)
+model = dran.fit_markov_chain_from_table(rows)
+print(report.is_valid, model.states)
 ```
 
 Common install profiles:
 
 ```bash
-pip install "design-research-analysis[seq]"
-pip install "design-research-analysis[lang,embeddings]"
-pip install "design-research-analysis[maps]"
-pip install "design-research-analysis[stats,data]"
-pip install "design-research-analysis[all]"
+python -m pip install "design-research-analysis[seq]"
+python -m pip install "design-research-analysis[lang,embeddings]"
+python -m pip install "design-research-analysis[maps,embeddings]"  # text-driven maps
+python -m pip install "design-research-analysis[maps]"             # numeric features
+python -m pip install "design-research-analysis[stats,data]"
+python -m pip install "design-research-analysis[all]"
 ```
 
 Unified-table coercion, validation, and derived-column helpers ship in the base
@@ -90,8 +108,9 @@ design-research-analysis run-embedding-maps --input data/events.csv --summary-js
 design-research-analysis run-stats --input data/events.csv --summary-json artifacts/stats.json --mode regression --x-columns x1,x2 --y-column y
 ```
 
-The Python API can start from files too at the main ingestion points, for example
-`coerce_unified_table("data/events.csv")` and `profile_dataframe("data/events.csv")`.
+The Python API can start from files too at the main ingestion points. For
+example, `coerce_unified_table("data/events.csv")` uses the base install;
+`profile_dataframe("data/events.csv")` requires the `data` extra.
 
 ## Examples
 
@@ -99,19 +118,20 @@ Start with [examples/README.md](https://github.com/cmudrc/design-research-analys
 
 ## Docs
 
-See the [published documentation](https://cmudrc.github.io/design-research-analysis/) for quickstart, workflow guidance, schema details, CLI reference, and API docs.
+See the [published documentation](https://cmudrc.github.io/design-research-analysis/) for quickstart, workflow guidance, schema details, CLI reference, and API docs. Use the [design-research umbrella documentation](https://cmudrc.github.io/design-research/) for canonical whole-stack orientation and cross-package examples.
 
 Build docs locally with:
 
 ```bash
-make docs
+make docs-check
+make docs-build
 ```
 
 ## Public API
 
 The supported public surface is whatever is exported from `design_research_analysis.__all__`.
 
-Top-level exports include:
+Selected primary entry points include:
 
 - Package metadata: `__version__`
 - Artifact handoff helpers: `validate_experiment_events`, `build_condition_metric_table_from_artifacts`, `build_event_table_from_artifacts`

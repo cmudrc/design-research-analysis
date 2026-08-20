@@ -6,10 +6,12 @@ The analysis layer for reproducible design-research event data.
 What This Library Does
 ----------------------
 
-``design-research-analysis`` supports sequence analysis, language analysis,
-embedding maps, and statistical modeling over unified event-table
-inputs. It is built for recurring research workflows where validation,
-provenance, and repeatability are first-order concerns.
+``design-research-analysis`` is the analysis and interpretation layer in the
+CMU Design Research Collective design-research ecosystem. It supports sequence
+analysis, language analysis, embedding maps, and statistical modeling over
+unified event tables and canonical experiment artifacts. It is built for
+recurring research workflows where validation, provenance, and repeatability
+are first-order concerns.
 
 Unified-table validation and column derivation are core features, not
 pre-processing footnotes. They make downstream analyses composable,
@@ -93,8 +95,9 @@ Guides
 Learn the table model, setup flow, and repeatable analysis patterns that shape
 a stable downstream research pipeline.
 
-- :doc:`quickstart`
+- :doc:`guides`
 - :doc:`installation`
+- :doc:`quickstart`
 - :doc:`concepts`
 - :doc:`experiments_handoff`
 - :doc:`typical_workflow`
@@ -115,38 +118,56 @@ Reference
 Look up the stable import surface, CLI behavior, and dependency guidance for
 repeatable analysis environments.
 
+- :doc:`reference/index`
 - :doc:`api`
 - :doc:`cli_reference`
 - :doc:`dependencies_and_extras`
-- :doc:`automation_baseline`
 
-Integration With The Ecosystem
-------------------------------
+Architecture: Two Complementary Views
+-------------------------------------
 
-The Design Research Collective maintains a modular ecosystem of libraries for
-studying human and AI design behavior.
+**Control topology:** Problems and Agents are peer study inputs. Experiments
+owns study design and coordinates their execution, then defines the artifact
+handoff to Analysis.
 
-- **design-research-agents** implements AI participants, workflows, and tool-using reasoning patterns.
-- **design-research-problems** provides benchmark design tasks, prompts, grammars, and evaluators.
-- **design-research-analysis** analyzes the traces, event tables, and outcomes generated during studies.
-- **design-research-experiments** sits above the stack as the study-design and orchestration layer, defining hypotheses, factors, conditions, replications, and artifact flows across agents, problems, and analysis.
+**Runtime and data flow:** Problems + Agents → Experiments artifact set →
+Analysis → evidence that can refine the next study protocol.
 
-Together these libraries support end-to-end design research pipelines, from
-study design through execution and interpretation.
+These are two views of the same package family, not an installation order. The
+umbrella routes imports and pins a tested combination; implementation stays
+with the package that owns each behavior. See the umbrella
+`compatibility and package status <https://cmudrc.github.io/design-research/compatibility.html>`_
+for the tested family combination.
 
 .. container:: drc-home-ecosystem
 
    .. image:: _static/ecosystem-platform.svg
-      :alt: Ecosystem diagram showing experiments above agents, problems, and analysis.
+      :alt: Two-view diagram showing the control topology and runtime data flow across Problems, Agents, Experiments, and Analysis.
       :class: dark-light drc-ecosystem-figure
       :width: 100%
       :align: center
 
+Ecosystem Packages
+------------------
+
+- **Problems** — tasks, prompts, grammars, benchmarks, and evaluators:
+  `documentation <https://cmudrc.github.io/design-research-problems/>`__
+- **Agents** — AI participants, workflows, tools, and traceable reasoning:
+  `documentation <https://cmudrc.github.io/design-research-agents/>`__
+- **Experiments** — hypotheses, factors, conditions, replications, execution,
+  and artifact export:
+  `documentation <https://cmudrc.github.io/design-research-experiments/>`__
+- **Analysis** — validation, transformation, statistics, and visualization of
+  study artifacts: :doc:`guides`
+- **Umbrella** — routed imports, learning paths, and tested compatibility:
+  `documentation <https://cmudrc.github.io/design-research/>`__
+
 Start Here
 ----------
 
-- :doc:`quickstart`
+- :doc:`guides`
 - :doc:`installation`
+- :doc:`quickstart`
 - :doc:`concepts`
 - :doc:`experiments_handoff`
 - :doc:`typical_workflow`
@@ -161,14 +182,7 @@ Start Here
    :caption: Guides
    :hidden:
 
-   quickstart
-   installation
-   concepts
-   experiments_handoff
-   typical_workflow
-   workflows
-   analysis_recipes
-   unified_table_schema
+   guides
 
 .. toctree::
    :maxdepth: 2
@@ -182,11 +196,7 @@ Start Here
    :caption: Reference
    :hidden:
 
-   api
-   cli_reference
-   dependencies_and_extras
-   vscode_start
-   automation_baseline
+   reference/index
 
 .. toctree::
    :maxdepth: 1

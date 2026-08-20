@@ -14,6 +14,11 @@ make dev
 ```
 
 The preferred maintainer interpreter is set in `.python-version` (`3.12`).
+Install the optional families before running the complete example suite:
+
+```bash
+python -m pip install -e ".[dev,data,stats,lang,maps,seq]"
+```
 
 ## Release Publishing
 
@@ -29,7 +34,8 @@ workflow builds and validates distributions before any upload:
 
 ## Local Quality Checks
 
-Run these before opening a pull request:
+Use `make ci` as the canonical automated pre-merge baseline. Its component
+commands are useful while iterating:
 
 ```bash
 make fmt
@@ -39,8 +45,14 @@ make coverage
 make docstrings-check
 make test
 make docs-check
-make docs
+make docs-build
+make run-examples
+make examples-coverage
 ```
+
+`make ci` includes `make docs-check` but not the strict HTML build. Run
+`make docs-build` for documentation changes and `make docs-linkcheck` when
+public links change.
 
 ## Quality Gates
 

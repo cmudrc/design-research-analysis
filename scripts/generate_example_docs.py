@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate example Sphinx pages from top-level example docstrings."""
+"""Generate example Sphinx pages from runnable example docstrings."""
 
 from __future__ import annotations
 
@@ -43,8 +43,9 @@ def _discover_examples(repo_root: Path) -> list[Path]:
     """Discover runnable Python examples under ``examples/``."""
     examples_root = repo_root / "examples"
     discovered: list[Path] = []
-    for path in sorted(examples_root.glob("*.py")):
-        if path.name.startswith("_"):
+    for path in sorted(examples_root.rglob("*.py")):
+        rel_parts = path.relative_to(examples_root).parts
+        if path.name.startswith("_") or "__pycache__" in rel_parts:
             continue
         discovered.append(path)
     return discovered
@@ -103,14 +104,16 @@ def _parse_canonical_sections(*, doc_text: str, source_path: Path) -> dict[str, 
     return {name: "\n".join(lines).strip() for name, lines in sections.items()}
 
 
-def _slug_for_example(path: Path) -> str:
+def _slug_for_example(path: Path, examples_root: Path) -> str:
     """Build deterministic docs slug for one example path."""
-    return path.stem.replace("-", "_")
+    relative = path.relative_to(examples_root).with_suffix("")
+    return "__".join(part.replace("-", "_") for part in relative.parts)
 
 
-def _title_for_example(path: Path) -> str:
+def _title_for_example(path: Path, examples_root: Path) -> str:
     """Build human-readable page title for one example path."""
-    label = path.stem.replace("-", " ").replace("_", " ")
+    relative = path.relative_to(examples_root).with_suffix("")
+    label = " ".join(relative.parts).replace("-", " ").replace("_", " ")
     title_parts: list[str] = []
     for token in label.split(" "):
         normalized = token.strip().lower()
@@ -181,13 +184,13 @@ def _render_example_page(spec: ExampleDocSpec) -> str:
 def _render_examples_index(specs: list[ExampleDocSpec]) -> str:
     """Render top-level examples index page as RST."""
     lines = [
-        "Examples Guide",
-        "==============",
+        "Examples",
+        "========",
         "",
         "The examples in this repository are runnable research-oriented scripts. They are",
         "designed to show not only API usage, but how the library fits into realistic",
-        "experimental workflows. Each example lists dependencies, expected scope, and",
-        "the primary concept it demonstrates.",
+        "experimental workflows. The featured examples below list dependencies,",
+        "expected scope, and the primary concept they demonstrate.",
         "",
         "Featured Examples",
         "-----------------",
@@ -204,9 +207,9 @@ def _render_examples_index(specs: list[ExampleDocSpec]) -> str:
         "Sequence From Table",
         "~~~~~~~~~~~~~~~~~~~",
         "",
-        "Fit sequence models directly from event rows.",
+        "Fit a first-order Markov chain directly from event rows.",
         "",
-        "**Requires:** ``seq`` for full HMM coverage",
+        "**Requires:** base install",
         "**Runtime:** short",
         "**Teaches:** token extraction from events, transition modeling, sequence summaries",
         "",
@@ -215,7 +218,7 @@ def _render_examples_index(specs: list[ExampleDocSpec]) -> str:
         "",
         "Run language-convergence workflows with custom embedding logic.",
         "",
-        "**Requires:** ``lang,embeddings``",
+        "**Requires:** base install; the script supplies a custom embedder",
         "**Runtime:** medium",
         (
             "**Teaches:** semantic trajectory analysis, embedder integration, "
@@ -227,7 +230,7 @@ def _render_examples_index(specs: list[ExampleDocSpec]) -> str:
         "",
         "Plot trace-aware embedding maps with scalar value overlays.",
         "",
-        "**Requires:** ``maps``",
+        "**Requires:** base install; ``maps`` adds optional comparison methods",
         "**Runtime:** short",
         (
             "**Teaches:** multi-method map comparison, trace overlays, "
@@ -249,9 +252,9 @@ def _render_examples_index(specs: list[ExampleDocSpec]) -> str:
         "Stats Regression",
         "~~~~~~~~~~~~~~~~",
         "",
-        "Run inferential modeling over event-derived variables.",
+        "Fit an ordinary least-squares model over event-derived variables.",
         "",
-        "**Requires:** ``stats,data``",
+        "**Requires:** base install",
         "**Runtime:** short",
         "**Teaches:** model setup, coefficient interpretation, effect-focused reporting",
         "",
@@ -271,6 +274,7 @@ def _render_examples_index(specs: list[ExampleDocSpec]) -> str:
 def _build_specs(repo_root: Path) -> list[ExampleDocSpec]:
     """Build parsed docs specs for runnable examples."""
     specs: list[ExampleDocSpec] = []
+    examples_root = repo_root / "examples"
     for path in _discover_examples(repo_root):
         doc_text, source_start_line = _parse_python_doc_text(path)
         sections = _parse_canonical_sections(doc_text=doc_text, source_path=path)
@@ -278,8 +282,8 @@ def _build_specs(repo_root: Path) -> list[ExampleDocSpec]:
         specs.append(
             ExampleDocSpec(
                 rel_path=rel_path,
-                slug=_slug_for_example(path),
-                title=_title_for_example(path),
+                slug=_slug_for_example(path, examples_root),
+                title=_title_for_example(path, examples_root),
                 source_start_line=source_start_line,
                 sections=sections,
             )
@@ -313,8 +317,8 @@ def _sync_stale_pages(
     """Remove stale generated pages or report drift in check mode."""
     if not docs_examples_root.exists():
         return
-    for existing in sorted(docs_examples_root.glob("*.rst")):
-        if existing.name == "index.rst":
+    for existing in sorted(docs_examples_root.rglob("*.rst")):
+        if existing == docs_examples_root / "index.rst":
             continue
         if existing not in generated_pages:
             if check:

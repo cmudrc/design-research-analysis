@@ -1,10 +1,10 @@
-Examples Guide
-==============
+Examples
+========
 
 The examples in this repository are runnable research-oriented scripts. They are
 designed to show not only API usage, but how the library fits into realistic
-experimental workflows. Each example lists dependencies, expected scope, and
-the primary concept it demonstrates.
+experimental workflows. The featured examples below list dependencies,
+expected scope, and the primary concept they demonstrate.
 
 Featured Examples
 -----------------
@@ -21,9 +21,9 @@ Validate and normalize a unified event table before modeling.
 Sequence From Table
 ~~~~~~~~~~~~~~~~~~~
 
-Fit sequence models directly from event rows.
+Fit a first-order Markov chain directly from event rows.
 
-**Requires:** ``seq`` for full HMM coverage
+**Requires:** base install
 **Runtime:** short
 **Teaches:** token extraction from events, transition modeling, sequence summaries
 
@@ -32,7 +32,7 @@ Language Custom Embedder
 
 Run language-convergence workflows with custom embedding logic.
 
-**Requires:** ``lang,embeddings``
+**Requires:** base install; the script supplies a custom embedder
 **Runtime:** medium
 **Teaches:** semantic trajectory analysis, embedder integration, text-study interpretation
 
@@ -41,7 +41,7 @@ Embedding Maps Trajectories
 
 Plot trace-aware embedding maps with scalar value overlays.
 
-**Requires:** ``maps``
+**Requires:** base install; ``maps`` adds optional comparison methods
 **Runtime:** short
 **Teaches:** multi-method map comparison, trace overlays, and scalar-colored trajectories
 
@@ -57,9 +57,9 @@ Compute idea-space coverage and trajectory summaries, then render the main plots
 Stats Regression
 ~~~~~~~~~~~~~~~~
 
-Run inferential modeling over event-derived variables.
+Fit an ordinary least-squares model over event-derived variables.
 
-**Requires:** ``stats,data``
+**Requires:** base install
 **Runtime:** short
 **Teaches:** model setup, coefficient interpretation, effect-focused reporting
 

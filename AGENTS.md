@@ -2,8 +2,9 @@
 
 ## Purpose
 
-This repository is a Python 3.12+ analysis library for the cmudrc design
-research ecosystem. Keep changes focused, keep the public API intentional, and
+This repository is the Python 3.12+ analysis and interpretation layer in the
+CMU Design Research Collective design-research ecosystem. Keep changes focused,
+keep the public API intentional, and
 preserve reproducible table-analysis workflows across sequence, language,
 dimensionality-reduction, and statistical pipelines.
 
@@ -14,6 +15,8 @@ dimensionality-reduction, and statistical pipelines.
   - `source .venv/bin/activate`
 - The preferred interpreter target lives in `.python-version` (`3.12`).
 - Install local tooling with `make dev`.
+- Install the full example-validation profile before running `make ci`:
+  - `python -m pip install -e ".[dev,data,stats,lang,maps,seq]"`
 
 ## Testing And Validation
 
@@ -27,7 +30,7 @@ merging.
   - `make test`
 - If docs changed:
   - `make docs-check`
-  - `make docs`
+  - `make docs-build`
 - If the example changed:
   - `make run-examples`
   - `make examples-coverage`

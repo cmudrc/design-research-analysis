@@ -27,7 +27,7 @@ Run sequence, language, embedding-map, and/or statistical workflows.
 
 Write structured summaries, optional exports, and run-manifest metadata.
 
-5. Connect to the next library
+5. Compose the ecosystem seams
 ------------------------------
 
 Feed interpreted findings back to ``design-research-experiments`` for protocol

@@ -4,6 +4,13 @@ Embedding Maps Workflows
 Use embedding-map workflows when embedding structure, trajectories, or scalar
 value overlays must be inspected, compared, or visualized.
 
+Install ``design-research-analysis[maps,embeddings]`` when records begin as
+text and the package should create sentence embeddings. Install ``[maps]``
+alone when you already have numeric vectors or use the CLI's
+``--feature-columns`` path. PCA projection and plotting with a custom embedder
+are available from the base install; ``maps`` supplies the additional manifold
+and clustering backends.
+
 Typical Questions
 -----------------
 
@@ -53,3 +60,6 @@ The embedding-maps summary JSON includes per-method clustering, coverage, and
 trajectory diagnostics. When trace and order columns are supplied, trajectories
 follow those fields; otherwise the CLI falls back to ``session_id`` and
 ``timestamp`` when present.
+
+Because the command embeds the ``text`` column when ``--feature-columns`` is
+omitted, the command shown above requires both ``maps`` and ``embeddings``.

@@ -14,6 +14,13 @@ engineering design studies.
 Technical Implementation
 ------------------------
 
+Install the owning optional profiles before using the source-checkout run
+command:
+
+.. code-block:: bash
+
+   python -m pip install -e ".[stats,lang,seq]"
+
 1. Validate and summarize a tiny unified event table from two bracket-review sessions.
 2. Fit and compare Markov-chain traces, build a condition metric table, and run
    a permutation-style pair comparison on mass-oriented scores.
@@ -22,7 +29,7 @@ Technical Implementation
 
 .. literalinclude:: ../../examples/mechanical_design_review_analysis.py
    :language: python
-   :lines: 21-
+   :lines: 28-
    :linenos:
 
 Expected Results

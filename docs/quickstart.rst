@@ -15,7 +15,7 @@ validate it before running downstream analysis.
 .. code-block:: bash
 
    python -m pip install --upgrade pip
-   pip install design-research-analysis
+   python -m pip install design-research-analysis
 
 Or install from source:
 
@@ -26,16 +26,20 @@ Or install from source:
    python -m venv .venv
    source .venv/bin/activate
    python -m pip install --upgrade pip
-   pip install .
+   python -m pip install .
 
 Install extras when you need optional analysis families:
 
 .. code-block:: bash
 
-   pip install "design-research-analysis[seq]"
-   pip install "design-research-analysis[lang,embeddings]"
-   pip install "design-research-analysis[maps]"
-   pip install "design-research-analysis[stats,data]"
+   python -m pip install "design-research-analysis[seq]"
+   python -m pip install "design-research-analysis[lang,embeddings]"
+   python -m pip install "design-research-analysis[maps,embeddings]"
+   python -m pip install "design-research-analysis[stats,data]"
+
+The default text-driven embedding-map path needs both ``maps`` and
+``embeddings``. If you pass numeric feature columns instead, ``maps`` alone is
+enough.
 
 2. Minimal Runnable Example
 ---------------------------
@@ -63,16 +67,24 @@ Install extras when you need optional analysis families:
    result = fit_markov_chain_from_table(rows)
    print(result.states)
 
-You can also point the API at exported files directly when that is more
-convenient:
+The base API can also read an exported table directly:
 
 .. code-block:: python
 
-   from design_research_analysis import coerce_unified_table, profile_dataframe
+   from design_research_analysis import coerce_unified_table
 
    rows = coerce_unified_table("data/events.csv")
+   print(len(rows))
+
+Dataset profiling is a separate optional family. Install it first with
+``python -m pip install "design-research-analysis[data]"``:
+
+.. code-block:: python
+
+   from design_research_analysis import profile_dataframe
+
    profile = profile_dataframe("data/events.csv")
-   print(len(rows), profile["n_columns"])
+   print(profile["n_columns"])
 
 3. What Happened
 ----------------

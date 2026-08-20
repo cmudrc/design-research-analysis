@@ -100,13 +100,21 @@ Equivalent maintainer shortcut:
 
    make dev
 
-Run the deterministic example path from the integrated terminal:
+Run the base-install example path from the integrated terminal:
 
 .. code-block:: bash
 
    make run-example
-   make examples-test
    python examples/basic_usage.py
+
+To run the full optional-family example inventory, install its dependency
+profile first:
+
+.. code-block:: bash
+
+   python -m pip install -e ".[dev,data,stats,lang,maps,seq]"
+   make run-examples
+   make examples-coverage
 
 First Development Checks
 ------------------------
@@ -131,8 +139,12 @@ Install optional extras only when a workflow needs them:
 
    python -m pip install -e ".[seq]"
    python -m pip install -e ".[lang,embeddings]"
-   python -m pip install -e ".[maps]"
+   python -m pip install -e ".[maps,embeddings]"
    python -m pip install -e ".[stats,data]"
+
+Use ``.[maps]`` alone when the embedding-map workflow starts from numeric
+features rather than text. Dataset profiling and codebook examples need
+``.[data]``.
 
 Runtime Caches
 --------------

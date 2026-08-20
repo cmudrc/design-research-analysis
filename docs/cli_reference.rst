@@ -47,6 +47,7 @@ Validates schema compliance and writes a JSON report.
 ~~~~~~~~~~~~~~~~~~~
 
 Profiles a dataset and writes summary diagnostics (missingness, inferred dtypes, and warnings).
+Requires the ``data`` extra.
 
 .. code-block:: bash
 
@@ -59,6 +60,7 @@ Profiles a dataset and writes summary diagnostics (missingness, inferred dtypes,
 ~~~~~~~~~~~~~~~~~~~~
 
 Validates a dataset against a JSON schema object.
+Requires the ``data`` extra.
 
 .. code-block:: bash
 
@@ -71,6 +73,7 @@ Validates a dataset against a JSON schema object.
 ~~~~~~~~~~~~~~~~~~~~~
 
 Generates a codebook CSV plus a JSON summary.
+Requires the ``data`` extra.
 
 .. code-block:: bash
 
@@ -110,6 +113,9 @@ Runs semantic convergence plus sentiment analysis, and optionally topic modeling
 ~~~~~~~~~~~~~~~~~~~~~~
 
 Runs embedding-map construction, clustering, and optional plotting/trajectory diagnostics.
+The default text-driven path requires ``maps,embeddings``. A numeric-feature
+run with ``--feature-columns`` requires ``maps`` but skips the embedding
+backend.
 
 .. code-block:: bash
 

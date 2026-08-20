@@ -6,6 +6,13 @@ with sequence, language, dataset, embedding-map, statistical, and
 provenance outputs.
 
 ## Technical Implementation
+Install the owning optional profiles before using the source-checkout run
+command:
+
+.. code-block:: bash
+
+   python -m pip install -e ".[data,stats,maps]"
+
 1. Build an in-memory unified event table with condition labels and outcome fields.
 2. Validate table quality and compute sequence/language summaries.
 3. Profile and validate a dataframe schema; generate a codebook.
