@@ -70,6 +70,8 @@ Highlights
 - Statistical workflows for comparisons, regression, mixed effects, and power
 - Runtime provenance capture for reproducible study artifacts
 - Top-level artifact handoff helpers for experiment exports
+- Portable analysis results and evidence-linked paper contributions
+- Deterministic, integrity-checked paper-draft research bundles
 
 Typical Workflow
 ----------------
@@ -100,6 +102,8 @@ a stable downstream research pipeline.
 - :doc:`quickstart`
 - :doc:`concepts`
 - :doc:`experiments_handoff`
+- :doc:`paper_contributions`
+- :doc:`research_bundle`
 - :doc:`typical_workflow`
 - :doc:`workflows`
 - :doc:`analysis_recipes`
@@ -170,6 +174,8 @@ Start Here
 - :doc:`quickstart`
 - :doc:`concepts`
 - :doc:`experiments_handoff`
+- :doc:`paper_contributions`
+- :doc:`research_bundle`
 - :doc:`typical_workflow`
 - :doc:`examples/index`
 - :doc:`api`
@@ -183,6 +189,8 @@ Start Here
    :hidden:
 
    guides
+   paper_contributions
+   research_bundle
 
 .. toctree::
    :maxdepth: 2
