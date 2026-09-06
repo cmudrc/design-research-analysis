@@ -55,6 +55,11 @@ from .paper import (
     load_analysis_result,
     write_analysis_result,
 )
+from .research_bundle import (
+    BUNDLE_SCHEMA_VERSION,
+    create_research_bundle,
+    verify_research_bundle,
+)
 from .runtime import (
     attach_provenance,
     capture_run_context,
@@ -104,6 +109,7 @@ from .visualization import (
 
 __all__ = [
     "ANALYSIS_RESULT_VERSION",
+    "BUNDLE_SCHEMA_VERSION",
     "PAPER_CONTRIBUTION_VERSION",
     "AnalysisCheck",
     "AnalysisExclusion",
@@ -143,6 +149,7 @@ __all__ = [
     "compute_interrater_reliability",
     "compute_language_convergence",
     "compute_semantic_distance_trajectory",
+    "create_research_bundle",
     "dataset",
     "decode_hmm",
     "derive_columns",
@@ -183,6 +190,7 @@ __all__ = [
     "validate_dataframe",
     "validate_experiment_events",
     "validate_unified_table",
+    "verify_research_bundle",
     "visualization",
     "write_analysis_result",
     "write_run_manifest",

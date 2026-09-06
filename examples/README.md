@@ -15,6 +15,7 @@ docstring via ``scripts/generate_example_docs.py``.
 - `mechanical_design_review_analysis.py`: combine process, condition-metric, language, and visualization helpers for a bracket design review.
 - `stats_regression.py`: novelty-vs-iteration regression for prototype runs.
 - `paper_contributions.py`: portable analysis records and evidence-linked paper support.
+- `verified_paper_bundle.py`: deterministic, integrity-checked paper-draft handoff with narrow data selection.
 - `stats_interrater_reliability.py`: Cohen, Fleiss, and nominal Krippendorff reliability for protocol codings.
 - `condition_pair_significance.py`: join canonical experiment exports into run-level metrics and render pairwise significance summaries.
 - `experiment_artifacts_handoff.py`: artifact-first condition, sequence, and regression analyses over canonical experiment exports.

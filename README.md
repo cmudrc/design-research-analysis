@@ -34,6 +34,7 @@ This package centers on reproducible analysis workflows with a curated top-level
 - Statistical wrappers (group comparisons, OLS regression, mixed-effects models, nonparametrics, and power)
 - Portable analysis-result records and evidence-linked paper contributions
 - Runtime provenance capture for reproducibility manifests
+- Deterministic, integrity-checked paper-draft bundles with narrow data selection
 - Top-level artifact handoff helpers for experiment exports
 - A thin CLI for deterministic pipeline runs
 
@@ -143,6 +144,7 @@ Selected primary entry points include:
 - Statistics: `compare_groups`, `fit_regression`, `fit_mixed_effects`, `permutation_test`, `bootstrap_ci`, power helpers
 - Dataset + runtime: `profile_dataframe`, `validate_dataframe`, `generate_codebook`, `capture_run_context`, `attach_provenance`, `write_run_manifest`
 - Paper support: `build_analysis_result`, `write_analysis_result`, `load_analysis_result`, `collect_analysis_paper_contributions`
+- Verified bundle: `create_research_bundle`, `verify_research_bundle`, `BUNDLE_SCHEMA_VERSION`
 
 ## Contributing
 

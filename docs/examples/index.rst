@@ -82,3 +82,4 @@ Full Catalog
    stats_interrater_reliability
    stats_regression
    unified_table_validation
+   verified_paper_bundle

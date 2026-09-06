@@ -13,6 +13,7 @@ def test_public_exports_match_the_curated_api() -> None:
 
     assert package.__all__ == [
         "ANALYSIS_RESULT_VERSION",
+        "BUNDLE_SCHEMA_VERSION",
         "PAPER_CONTRIBUTION_VERSION",
         "AnalysisCheck",
         "AnalysisExclusion",
@@ -52,6 +53,7 @@ def test_public_exports_match_the_curated_api() -> None:
         "compute_interrater_reliability",
         "compute_language_convergence",
         "compute_semantic_distance_trajectory",
+        "create_research_bundle",
         "dataset",
         "decode_hmm",
         "derive_columns",
@@ -92,6 +94,7 @@ def test_public_exports_match_the_curated_api() -> None:
         "validate_dataframe",
         "validate_experiment_events",
         "validate_unified_table",
+        "verify_research_bundle",
         "visualization",
         "write_analysis_result",
         "write_run_manifest",
