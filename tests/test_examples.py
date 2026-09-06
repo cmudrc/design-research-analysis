@@ -16,6 +16,7 @@ BASE_EXAMPLES = (
     "experiment_artifacts_handoff.py",
     "idea_space_metrics.py",
     "language_custom_embedder.py",
+    "paper_contributions.py",
     "sequence_from_table.py",
     "stats_interrater_reliability.py",
     "stats_regression.py",

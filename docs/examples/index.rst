@@ -77,6 +77,7 @@ Full Catalog
    lab_study_pipeline
    language_custom_embedder
    mechanical_design_review_analysis
+   paper_contributions
    sequence_from_table
    stats_interrater_reliability
    stats_regression
