@@ -6,8 +6,14 @@ This page documents the supported top-level public API from
 
 Top-level groups:
 
-- Package metadata: ``__version__``
+- Package metadata: ``__version__``, ``ANALYSIS_RESULT_VERSION``,
+  ``PAPER_CONTRIBUTION_VERSION``, ``BUNDLE_SCHEMA_VERSION``
 - Comparison: ``ComparisonResult``
+- Paper support: ``AnalysisResultRecord``, ``AnalysisStatus``,
+  ``AnalysisExclusion``, ``AnalysisCheck``, ``build_analysis_result``,
+  ``write_analysis_result``, ``load_analysis_result``, and
+  ``collect_analysis_paper_contributions``
+- Verified bundle: ``create_research_bundle``, ``verify_research_bundle``
 - Module facades: ``dataset``, ``embedding_maps``, ``integration``, ``language``,
   ``runtime``, ``sequence``, ``stats``, ``visualization``
 - Unified table contracts: ``UnifiedTableConfig``, ``UnifiedTableValidationReport``,

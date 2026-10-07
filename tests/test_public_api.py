@@ -12,6 +12,13 @@ def test_public_exports_match_the_curated_api() -> None:
     """Keep the top-level exports explicit and stable."""
 
     assert package.__all__ == [
+        "ANALYSIS_RESULT_VERSION",
+        "BUNDLE_SCHEMA_VERSION",
+        "PAPER_CONTRIBUTION_VERSION",
+        "AnalysisCheck",
+        "AnalysisExclusion",
+        "AnalysisResultRecord",
+        "AnalysisStatus",
         "ComparisonResult",
         "DecodeResult",
         "DiscreteHMMResult",
@@ -25,6 +32,7 @@ def test_public_exports_match_the_curated_api() -> None:
         "__version__",
         "attach_provenance",
         "bootstrap_ci",
+        "build_analysis_result",
         "build_condition_metric_table",
         "build_condition_metric_table_from_artifacts",
         "build_embedding_map",
@@ -33,6 +41,7 @@ def test_public_exports_match_the_curated_api() -> None:
         "capture_run_context",
         "cluster_embedding_map",
         "coerce_unified_table",
+        "collect_analysis_paper_contributions",
         "compare_condition_pairs",
         "compare_condition_pairs_from_artifacts",
         "compare_embedding_maps",
@@ -44,6 +53,7 @@ def test_public_exports_match_the_curated_api() -> None:
         "compute_interrater_reliability",
         "compute_language_convergence",
         "compute_semantic_distance_trajectory",
+        "create_research_bundle",
         "dataset",
         "decode_hmm",
         "derive_columns",
@@ -63,6 +73,7 @@ def test_public_exports_match_the_curated_api() -> None:
         "is_google_colab",
         "is_notebook",
         "language",
+        "load_analysis_result",
         "load_experiment_artifacts",
         "minimum_detectable_effect",
         "permutation_test",
@@ -83,7 +94,9 @@ def test_public_exports_match_the_curated_api() -> None:
         "validate_dataframe",
         "validate_experiment_events",
         "validate_unified_table",
+        "verify_research_bundle",
         "visualization",
+        "write_analysis_result",
         "write_run_manifest",
     ]
     assert isinstance(package.__version__, str)
